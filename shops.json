@@ -1,0 +1,45 @@
+[
+    {
+        "id": 1,
+        "name": "USED SNEAKERS KAI",
+        "genres": [
+            "ブーツ",
+            "スニーカー"
+        ],
+        "rating": 4.5,
+        "reviewCount": 90,
+        "address": "埼玉県川口市芝中田１丁目１−１４",
+        "imageUrls": [
+            "https://via.placeholder.com/300x200/404040/FFFFFF?text=KAI+店内"
+        ],
+        "latitude": 35.82363,
+        "longitude": 139.7345,
+        "homepageUrl": "https://used-sneakers.com",
+        "snsUrl": "https://www.instagram.com/usedsneakers_kai/",
+        "hours": "13:00〜22:00",
+        "hoursNote": "詳しくは店舗のSNSから営業時間を調べてください"
+    },
+    {
+        "id": 2,
+        "name": "古着83十条本店",
+        "genres": [
+            "ヴィンテージ",
+            "ヨーロッパ古着",
+            "小物",
+            "スニーカー",
+            "リユースショップ"
+        ],
+        "rating": 4.8,
+        "reviewCount": 125,
+        "address": "東京都北区十条仲原１丁目２−５ 赤のれんビル 2階",
+        "imageUrls": [
+            "https://via.placeholder.com/300x200/777777/FFFFFF?text=83+ヴィンテージ"
+        ],
+        "latitude": 35.76632,
+        "longitude": 139.72054,
+        "homepageUrl": "",
+        "snsUrl": "https://www.instagram.com/furu.gi83/",
+        "hours": "12:00〜22:00",
+        "hoursNote": "詳しくは店舗のSNSから営業時間を調べてください"
+    }
+]

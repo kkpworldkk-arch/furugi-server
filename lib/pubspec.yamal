@@ -1,0 +1,36 @@
+name: furugiya_map_app
+description: "A new Flutter project for used clothing maps."
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+# ==========================================
+#  パッケージの定義
+# ==========================================
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.1.0
+  image_picker: ^1.0.4
+  # マップ表示に必須
+  google_maps_flutter: ^2.5.3
+  # 「ここに行く」ボタン（外部アプリ起動）に必須
+  url_launcher: ^6.2.5
+  # ★新しく追加：Plus Code を緯度経度に変換するパッケージ
+  open_location_code: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+# ==========================================
+#  Flutter固有の設定
+# ==========================================
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icon.png

@@ -1,0 +1,98 @@
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import json
+import os
+
+app = Flask(__name__)
+CORS(app)
+
+SHOPS_FILE = 'shops.json'
+REVIEWS_FILE = 'reviews.json'
+
+DEFAULT_SHOPS = [
+    {
+        "id": 1, 
+        "name": "USED SNEAKERS KAI", 
+        "genres": ["ブーツ", "スニーカー"], 
+        "rating": 4.5, 
+        "reviewCount": 90, 
+        "address": "埼玉県川口市芝中田１丁目１−１４", 
+        "imageUrls": ["https://via.placeholder.com/300x200/404040/FFFFFF?text=KAI+店内"], 
+        "latitude": 35.82363, 
+        "longitude": 139.73450, 
+        "homepageUrl": "https://used-sneakers.com", 
+        "snsUrl": "https://www.instagram.com/usedsneakers_kai/", 
+        "hours": "13:00〜22:00", 
+        "hoursNote": "詳しくは店舗のSNSから営業時間を調べてください"
+    },
+    {
+        "id": 2, 
+        "name": "古着83十条本店", 
+        "genres": ["ヴィンテージ", "ヨーロッパ古着", "小物", "スニーカー", "リユースショップ"], 
+        "rating": 4.8, 
+        "reviewCount": 125, 
+        "address": "東京都北区十条仲原１丁目２−５ 赤のれんビル 2階", 
+        "imageUrls": ["https://via.placeholder.com/300x200/777777/FFFFFF?text=83+ヴィンテージ"], 
+        "latitude": 35.76632, 
+        "longitude": 139.72054, 
+        "homepageUrl": "", 
+        "snsUrl": "https://www.instagram.com/furu.gi83/", 
+        "hours": "12:00〜22:00", 
+        "hoursNote": "詳しくは店舗のSNSから営業時間を調べてください"
+    }
+]
+
+def load_data():
+    if not os.path.exists(SHOPS_FILE):
+        with open(SHOPS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(DEFAULT_SHOPS, f, ensure_ascii=False, indent=4)
+    if not os.path.exists(REVIEWS_FILE):
+        with open(REVIEWS_FILE, 'w', encoding='utf-8') as f:
+            json.dump([], f, ensure_ascii=False, indent=4)
+
+    with open(SHOPS_FILE, 'r', encoding='utf-8') as f:
+        shops = json.load(f)
+    with open(REVIEWS_FILE, 'r', encoding='utf-8') as f:
+        reviews = json.load(f)
+    return shops, reviews
+
+def save_data(shops, reviews):
+    with open(SHOPS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(shops, f, ensure_ascii=False, indent=4)
+    with open(REVIEWS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(reviews, f, ensure_ascii=False, indent=4)
+
+@app.route('/api/shops', methods=['GET'])
+def get_shops():
+    shops, _ = load_data()
+    sorted_shops = sorted(shops, key=lambda x: x['rating'], reverse=True)
+    return jsonify(sorted_shops)
+
+@app.route('/api/reviews/<int:shop_id>', methods=['GET'])
+def get_reviews(shop_id):
+    _, reviews = load_data()
+    shop_reviews = [r for r in reviews if r['shopId'] == shop_id]
+    return jsonify(shop_reviews)
+
+@app.route('/api/review', methods=['POST'])
+def post_review():
+    shops, reviews = load_data()
+    new_review = request.json
+    shop_id = new_review['shopId']
+    
+    new_review['id'] = len(reviews) + 1
+    reviews.append(new_review)
+    
+    shop = next((s for s in shops if s['id'] == shop_id), None)
+    if shop:
+        shop_reviews = [r for r in reviews if r['shopId'] == shop_id]
+        ratings = [r['rating'] for r in shop_reviews]
+        shop['rating'] = round(sum(ratings) / len(ratings), 1)
+        shop['reviewCount'] = len(ratings)
+        
+        save_data(shops, reviews)
+        return jsonify({"message": "Success", "new_rating": shop['rating']}), 201
+    return jsonify({"error": "Shop not found"}), 404
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
