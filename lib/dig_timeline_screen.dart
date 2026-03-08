@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_service.dart';
 import 'post_dig_screen.dart';
 
 class DigTimelineScreen extends StatefulWidget {
@@ -14,8 +15,8 @@ class _DigTimelineScreenState extends State<DigTimelineScreen> {
   List<dynamic> _posts = [];
   bool _isLoading = true;
 
-  // FlaskサーバーのURL（エミュレータの場合は 10.0.2.2、実機の場合はPCのIPアドレス）
-  final String apiUrl = "http://10.0.2.2:5000/api/posts"; 
+  // ApiServiceの共通ベースURLを使用
+  final String apiUrl = "${ApiService.baseUrl}/posts";
 
   @override
   void initState() {

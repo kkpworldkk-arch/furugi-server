@@ -59,9 +59,10 @@ class Shop(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     genres = db.Column(db.String(200))
-    rating = db.Column(db.Float, default=0.0)      
-    review_count = db.Column(db.Integer, default=0) 
+    rating = db.Column(db.Float, default=0.0)
+    review_count = db.Column(db.Integer, default=0)
     address = db.Column(db.String(200))
+    nearest_station = db.Column(db.String(100), nullable=True, default='')
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     plus_code = db.Column(db.String(100), nullable=True)
@@ -73,6 +74,7 @@ class Shop(db.Model):
     price_range = db.Column(db.String(50), default='不明')
     place_id = db.Column(db.String(100), nullable=True)
     map_url = db.Column(db.String(500), nullable=True)
+    payment_methods = db.Column(db.String(200), nullable=True)
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
@@ -146,10 +148,15 @@ def get_shops():
         query = query.filter(Shop.genres.ilike(f'%{genre}%'))
         
     if keyword:
-        # Shop.name に対して大文字小文字を無視した「あいまい検索」を行う
-        shops = query.filter(Shop.name.ilike(f'%{keyword}%')).all()
-    else:
-        shops = Shop.query.all()
+        query = query.filter(or_(
+            Shop.name.ilike(f'%{keyword}%'),
+            Shop.address.ilike(f'%{keyword}%'),
+            Shop.genres.ilike(f'%{keyword}%'),
+            Shop.description.ilike(f'%{keyword}%'),
+            Shop.nearest_station.ilike(f'%{keyword}%'),
+        ))
+
+    shops = query.all()
     
     output = []
     for shop in shops:
@@ -160,6 +167,7 @@ def get_shops():
             "rating": shop.rating,
             "reviewCount": shop.review_count,
             "address": shop.address,
+            "nearestStation": shop.nearest_station if shop.nearest_station else "",
             "latitude": shop.latitude,
             "longitude": shop.longitude,
             "plusCode": shop.plus_code if shop.plus_code else "",
@@ -169,7 +177,9 @@ def get_shops():
             "holiday": shop.holiday if shop.holiday else "年中無休",
             "description": shop.description,
             "priceRange": shop.price_range,
-            "map_url": shop.map_url,
+            "placeId": shop.place_id if shop.place_id else "",
+            "mapUrl": shop.map_url if shop.map_url else "",
+            "paymentMethods": shop.payment_methods if shop.payment_methods else "不明",
             "imageUrls": []
         })
     return jsonify(output)
@@ -188,6 +198,7 @@ def add_shop():
     new_shop = Shop(
         name=data.get('name', '店名なし'),
         address=data.get('address', ''),
+        nearest_station=data.get('nearestStation', ''),
         latitude=lat,
         longitude=lng,
         genres=genres_str,
@@ -203,6 +214,25 @@ def add_shop():
     db.session.add(new_shop)
     db.session.commit()
     return jsonify({"message": "Shop added"}), 201
+
+@app.route('/api/shops/<int:shop_id>', methods=['PATCH'])
+def update_shop(shop_id):
+    shop = db.session.get(Shop, shop_id)
+    if not shop:
+        return jsonify({"error": "店舗が見つかりません"}), 404
+    data = request.json
+    if 'paymentMethods' in data:
+        shop.payment_methods = data['paymentMethods']
+    if 'hours' in data:
+        shop.hours = data['hours']
+    if 'holiday' in data:
+        shop.holiday = data['holiday']
+    if 'description' in data:
+        shop.description = data['description']
+    if 'priceRange' in data:
+        shop.price_range = data['priceRange']
+    db.session.commit()
+    return jsonify({"message": "更新しました"})
 
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
@@ -284,60 +314,60 @@ def seed_data():
     initial_shops = [
         {
             "name": "古着屋JAM 原宿店", "genres": "アメカジ,ヴィンテージ",
-            "address": "東京都渋谷区神宮前6-28-5", 
+            "address": "東京都渋谷区神宮前6-28-5", "nearest_station": "原宿駅",
             "latitude": 35.6673795, "longitude": 139.703866,
             "homepage_url": "https://jamtrading.jp/", "sns_url": "https://instagram.com/furugiya_jam_official",
             "hours": "11:00 - 20:00", "description": "国内最大級の古着屋JAMの原宿店。", "price_range": "¥5,000 ~"
         },
         {
             "name": "Chicago 表参道店", "genres": "着物,アメカジ",
-            "address": "東京都渋谷区神宮前4-26-26", 
+            "address": "東京都渋谷区神宮前4-26-26", "nearest_station": "表参道駅",
             "latitude": 35.6687659, "longitude": 139.7074562,
             "homepage_url": "https://www.chicago.co.jp/", "sns_url": "",
             "hours": "11:00 - 20:00", "description": "原宿・表参道エリアの老舗。", "price_range": "¥3,000 ~"
         },
         {
             "name": "Flamingo 下北沢店", "genres": "US古着,レディース",
-            "address": "東京都世田谷区北沢2-25-12", 
+            "address": "東京都世田谷区北沢2-25-12", "nearest_station": "下北沢駅",
             "latitude": 35.6626969, "longitude": 139.6670597,
             "homepage_url": "", "sns_url": "",
             "hours": "12:00 - 21:00", "description": "下北沢のシンボル的な古着屋。", "price_range": "¥3,000 ~"
         },
         {
             "name": "USED SNEAKERS KAI", "genres": "スニーカー,ストリート",
-            "address": "埼玉県川口市芝中田1-1-14", 
+            "address": "埼玉県川口市芝中田1-1-14", "nearest_station": "蕨駅",
             "latitude": 35.8307115, "longitude": 139.6972093,
             "homepage_url": "https://used-sneakers.com/", "sns_url": "https://www.instagram.com/usedsneakers_kai/",
             "hours": "13:00 - 20:00", "description": "スニーカー好きにはたまらない隠れ家的名店。", "price_range": "¥10,000 ~"
         },
         {
             "name": "古着83 十条本店", "genres": "ヴィンテージ,レギュラー,アメカジ,アウトドア,小物",
-            "address": "東京都北区十条仲原1-2-5 赤のれんビル2F", 
+            "address": "東京都北区十条仲原1-2-5 赤のれんビル2F", "nearest_station": "十条駅",
             "place_id": "ChIJ7Y6CJ_2MGGARLTSfCl-Gf9w","latitude": 35.7616538, "longitude": 139.7214768,
             "homepage_url": "https://furugi83.thebase.in/", "sns_url": "https://www.instagram.com/furu.gi83/",
             "hours": "12:00 - 20:00", "description": "十条商店街にあるアットホームな古着屋。", "price_range": "¥3000~"
         },
         {
             "name": "古着屋 MERRYLOU", "genres": "ヴィンテージ,レギュラー",
-            "address": "東京都杉並区高円寺北2-6-4", 
+            "address": "東京都杉並区高円寺北2-6-4", "nearest_station": "高円寺駅",
             "latitude":35.7061491, "longitude":139.6497929,
             "homepage_url": "", "sns_url": "https://www.instagram.com/koenji_furugi/",
             "hours": "12:00 - 20:00", "description": "高円寺初インディーズ古着屋。高円寺駅から最も近い古着屋", "price_range": "¥2000~"
         },
-        # セカンドストリート（ここも評価データ削除済み）
-        {"name": "2nd STREET 原宿店", "genres": "ヴィンテージ,ストリート", "address": "東京都渋谷区神宮前4-26-4", "latitude": 35.6692271, "longitude": 139.7081291, "hours": "11:00-21:00", "description": "メンズ強化店。", "price_range": "¥5,000 ~"},
-        {"name": "2nd STREET 高円寺店", "genres": "ヴィンテージ,アメカジ", "address": "東京都杉並区高円寺南4-6-7", "latitude": 35.703028, "longitude": 139.6490492, "hours": "11:00-21:00", "description": "古着の街の旗艦店。", "price_range": "¥3,000 ~"},
-        {"name": "Super 2nd STREET 大宮日進店", "genres": "超大型,楽器,古着", "address": "埼玉県さいたま市北区日進町3-372", "latitude": 35.9367519, "longitude": 139.5987896, "hours": "10:00-22:00", "description": "日本最大級の在庫。", "price_range": "¥1,000 ~"},
-        {"name": "2nd STREET アメリカ村店", "genres": "ストリート,スニーカー", "address": "大阪府大阪市中央区西心斎橋2-18-5", "latitude": 34.6722428, "longitude": 135.4974877, "hours": "11:00-21:00", "description": "関西のストリートカルチャーの拠点。", "price_range": "¥5,000 ~"},
-        {"name": "2nd STREET 札幌狸小路4丁目店", "genres": "ブランド,ヴィンテージ", "address": "北海道札幌市中央区南2条西4-9-2", "latitude": 43.0572281, "longitude": 141.3516235, "hours": "10:00-22:00", "description": "北海道最大の品揃え。", "price_range": "¥5,000 ~"},
-        {"name": "2nd STREET 仙台中央店", "genres": "セレクト,ブランド古着", "address": "宮城県仙台市青葉区中央2-4-10", "latitude": 38.26211, "longitude": 140.8713, "hours": "10:00-21:00", "description": "東北エリアのトレンド発信拠点", "price_range": "¥5,000 ~"},
-        {"name": "2nd STREET 宇都宮簗瀬店", "genres": "トータル,古着全般", "address": "栃木県宇都宮市簗瀬町2512-1", "latitude": 36.5441314, "longitude": 139.8942151, "hours": "10:00-21:00", "description": "北関東の広大な店舗。", "price_range": "¥1,000 ~"},
-        {"name": "Super 2nd STREET 柏沼南店", "genres": "超大型,アウトドア", "address": "千葉県柏市風早1-8-1", "latitude": 35.8397974, "longitude": 140.0045411, "hours": "10:00-21:00", "description": "東日本最大級。", "price_range": "¥1,000 ~"},
-        {"name": "Super 2nd STREET 名古屋みなと店", "genres": "超大型,家具", "address": "愛知県名古屋市港区砂美町1-5", "latitude": 35.1065099, "longitude": 136.8717918, "hours": "10:00-21:00", "description": "東海地方最大の店舗。", "price_range": "¥1,000 ~"},
-        {"name": "2nd STREET 堀江店", "genres": "デザイナーズ,モード", "address": "大阪府大阪市西区南堀江1-9-1", "latitude": 34.67113, "longitude": 135.496079, "hours": "11:00-21:00", "description": "アーカイブ作品が揃う。", "price_range": "¥10,000 ~"},
-        {"name": "2nd STREET 神戸三宮店", "genres": "インポート,ハイブランド", "address": "兵庫県神戸市中央区加納町4-3-5", "latitude": 34.6945885, "longitude": 135.1931349, "hours": "11:00-21:00", "description": "欧州インポートブランドが強い。", "price_range": "¥10,000 ~"},
-        {"name": "2nd STREET 福岡天神2号店", "genres": "ヴィンテージ,メンズ", "address": "福岡県福岡市中央区大名2-1-4", "latitude": 33.5887023, "longitude": 130.3960067, "hours": "11:00-21:00", "description": "マニア垂涎のヴィンテージ特化店。", "price_range": "¥10,000 ~"},
-        {"name": "2nd STREET 那覇小禄店", "genres": "夏服,アウトドア", "address": "沖縄県那覇市赤嶺2-1-7", "latitude": 26.1979829, "longitude": 127.6684142, "hours": "10:00-21:00", "description": "沖縄ならではの品揃え。", "price_range": "¥1,000 ~"},
+        # セカンドストリート
+        {"name": "2nd STREET 原宿店", "genres": "ヴィンテージ,ストリート", "address": "東京都渋谷区神宮前4-26-4", "nearest_station": "原宿駅", "latitude": 35.6692271, "longitude": 139.7081291, "hours": "11:00-21:00", "description": "メンズ強化店。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 高円寺店", "genres": "ヴィンテージ,アメカジ", "address": "東京都杉並区高円寺南4-6-7", "nearest_station": "高円寺駅", "latitude": 35.703028, "longitude": 139.6490492, "hours": "11:00-21:00", "description": "古着の街の旗艦店。", "price_range": "¥3,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "Super 2nd STREET 大宮日進店", "genres": "超大型,楽器,古着", "address": "埼玉県さいたま市北区日進町3-372", "nearest_station": "日進駅", "latitude": 35.9367519, "longitude": 139.5987896, "hours": "10:00-22:00", "description": "日本最大級の在庫。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET アメリカ村店", "genres": "ストリート,スニーカー", "address": "大阪府大阪市中央区西心斎橋2-18-5", "nearest_station": "心斎橋駅", "latitude": 34.6722428, "longitude": 135.4974877, "hours": "11:00-21:00", "description": "関西のストリートカルチャーの拠点。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 札幌狸小路4丁目店", "genres": "ブランド,ヴィンテージ", "address": "北海道札幌市中央区南2条西4-9-2", "nearest_station": "大通駅", "latitude": 43.0572281, "longitude": 141.3516235, "hours": "10:00-22:00", "description": "北海道最大の品揃え。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 仙台中央店", "genres": "セレクト,ブランド古着", "address": "宮城県仙台市青葉区中央2-4-10", "nearest_station": "仙台駅", "latitude": 38.26211, "longitude": 140.8713, "hours": "10:00-21:00", "description": "東北エリアのトレンド発信拠点", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 宇都宮簗瀬店", "genres": "トータル,古着全般", "address": "栃木県宇都宮市簗瀬町2512-1", "nearest_station": "宇都宮駅", "latitude": 36.5441314, "longitude": 139.8942151, "hours": "10:00-21:00", "description": "北関東の広大な店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "Super 2nd STREET 柏沼南店", "genres": "超大型,アウトドア", "address": "千葉県柏市風早1-8-1", "nearest_station": "柏駅", "latitude": 35.8397974, "longitude": 140.0045411, "hours": "10:00-21:00", "description": "東日本最大級。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "Super 2nd STREET 名古屋みなと店", "genres": "超大型,家具", "address": "愛知県名古屋市港区砂美町1-5", "nearest_station": "名古屋競馬場前駅", "latitude": 35.1065099, "longitude": 136.8717918, "hours": "10:00-21:00", "description": "東海地方最大の店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 堀江店", "genres": "デザイナーズ,モード", "address": "大阪府大阪市西区南堀江1-9-1", "nearest_station": "四ツ橋駅", "latitude": 34.67113, "longitude": 135.496079, "hours": "11:00-21:00", "description": "アーカイブ作品が揃う。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 神戸三宮店", "genres": "インポート,ハイブランド", "address": "兵庫県神戸市中央区加納町4-3-5", "nearest_station": "三宮駅", "latitude": 34.6945885, "longitude": 135.1931349, "hours": "11:00-21:00", "description": "欧州インポートブランドが強い。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 福岡天神2号店", "genres": "ヴィンテージ,メンズ", "address": "福岡県福岡市中央区大名2-1-4", "nearest_station": "天神駅", "latitude": 33.5887023, "longitude": 130.3960067, "hours": "11:00-21:00", "description": "マニア垂涎のヴィンテージ特化店。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "2nd STREET 那覇小禄店", "genres": "夏服,アウトドア", "address": "沖縄県那覇市赤嶺2-1-7", "nearest_station": "赤嶺駅", "latitude": 26.1979829, "longitude": 127.6684142, "hours": "10:00-21:00", "description": "沖縄ならではの品揃え。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
     ]
 
     added_count = 0
