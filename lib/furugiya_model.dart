@@ -5,6 +5,7 @@ class FurugiyaShop {
   final double rating;
   final int reviewCount;
   final String address;
+  final String nearestStation;
   final double latitude;
   final double longitude;
   final String plusCode; // ★追加：Plus Codeを保持するプロパティ
@@ -14,6 +15,9 @@ class FurugiyaShop {
   final String holiday;
   final String description;
   final String priceRange;
+  final String placeId;
+  final String mapUrl;
+  final String paymentMethods;
   final List<String> imageUrls;
 
   FurugiyaShop({
@@ -23,15 +27,19 @@ class FurugiyaShop {
     required this.rating,
     required this.reviewCount,
     required this.address,
+    required this.nearestStation,
     required this.latitude,
     required this.longitude,
-    required this.plusCode, // ★追加
+    required this.plusCode,
     required this.homepageUrl,
     required this.snsUrl,
     required this.hours,
     required this.holiday,
     required this.description,
     required this.priceRange,
+    required this.placeId,
+    required this.mapUrl,
+    required this.paymentMethods,
     required this.imageUrls,
   });
 
@@ -43,6 +51,7 @@ class FurugiyaShop {
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['reviewCount'] ?? 0,
       address: json['address'] ?? '',
+      nearestStation: json['nearestStation'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
       plusCode: json['plusCode'] ?? '', // ★追加：JSONのキー名はキャメルケースを想定
@@ -52,6 +61,9 @@ class FurugiyaShop {
       holiday: json['holiday'] ?? 'なし',
       description: json['description'] ?? '',
       priceRange: json['priceRange'] ?? '不明',
+      placeId: json['placeId'] ?? '',
+      mapUrl: json['mapUrl'] ?? '',
+      paymentMethods: json['paymentMethods'] ?? '不明',
       imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
     );
   }

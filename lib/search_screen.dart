@@ -34,9 +34,11 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _search(String query) {
+    final q = query.toLowerCase();
     setState(() {
       _filteredShops = _allShops.where((shop) {
-        return shop.name.contains(query) || shop.address.contains(query) || shop.genres.join().contains(query);
+        final target = '${shop.name} ${shop.address} ${shop.nearestStation} ${shop.genres.join(' ')} ${shop.description}'.toLowerCase();
+        return target.contains(q);
       }).toList();
     });
   }
@@ -48,7 +50,7 @@ class _SearchScreenState extends State<SearchScreen> {
         title: TextField(
           controller: _controller,
           decoration: const InputDecoration(
-            hintText: '店名、住所、ジャンルで検索',
+            hintText: '店名・住所・駅名・ジャンルで検索',
             border: InputBorder.none,
           ),
           onChanged: _search,

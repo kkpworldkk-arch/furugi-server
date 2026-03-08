@@ -36,10 +36,10 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
         if (query.isEmpty) {
           matchText = true; // 何も入力してないときは全員OK
         } else {
-          // 検索対象のデータを1つの文字列にまとめる
-          final searchTarget = "${shop.name} ${shop.address} ${shop.genres.join(' ')} ${shop.description}";
-          
-          if (searchTarget.contains(query)) {
+          // 検索対象のデータを1つの文字列にまとめる（大文字小文字無視）
+          final searchTarget = "${shop.name} ${shop.address} ${shop.nearestStation} ${shop.genres.join(' ')} ${shop.description}".toLowerCase();
+
+          if (searchTarget.contains(query.toLowerCase())) {
             matchText = true;
           }
         }
@@ -88,7 +88,7 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
               controller: _searchController,
               onChanged: (value) => _runFilter(), // 文字を打つたびに検索実行
               decoration: InputDecoration(
-                hintText: "エリア、ジャンル、店名で検索",
+                hintText: "店名・住所・駅名・ジャンルで検索",
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
