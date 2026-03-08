@@ -123,9 +123,15 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openGoogleMaps(FurugiyaShop shop) async {
-    final String query = "${shop.name} ${shop.address}";
-    final String encodedQuery = Uri.encodeComponent(query);
-    final String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$encodedQuery";
+    String googleMapsUrl;
+
+    if (shop.mapUrl.isNotEmpty) {
+      googleMapsUrl = shop.mapUrl;
+    } else {
+      final String encodedQuery = Uri.encodeComponent("${shop.name} ${shop.address}");
+      googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$encodedQuery";
+    }
+
     final Uri uri = Uri.parse(googleMapsUrl);
     try {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -167,7 +173,7 @@ class _MapScreenState extends State<MapScreen> {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        hintText: '古着屋を検索...',
+                        hintText: '店名・住所・駅名で検索...',
                         prefixIcon: const Icon(Icons.search, color: Colors.brown),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.clear),
@@ -202,7 +208,7 @@ class _MapScreenState extends State<MapScreen> {
                           label: Text(genre),
                           selected: isSelected,
                           selectedColor: Colors.brown,
-                          backgroundColor: Colors.white.withOpacity(0.9),
+                          backgroundColor: Colors.white.withValues(alpha: 0.9),
                           labelStyle: TextStyle(
                             color: isSelected ? Colors.white : Colors.black,
                             fontWeight: FontWeight.bold,

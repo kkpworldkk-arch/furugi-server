@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'base_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // MobileAds.instance.initialize(); // 広告エラー防止のためコメントアウト
-  runApp(const MyApp());
+  dotenv.load(fileName: ".env").then((_) {
+    // MobileAds.instance.initialize(); // 広告エラー防止のためコメントアウト
+    runApp(const MyApp());
+  });
 }
 
 class MyApp extends StatelessWidget {

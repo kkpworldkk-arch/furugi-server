@@ -11,8 +11,16 @@ def import_shops_from_csv(filename='shops.csv'):
     print("🚀 座標、Plus Code、Googleマップリンクを最適化しながらインポートを開始します...")
 
     with app.app_context():
+        # 既存DBに nearest_station カラムがなければ追加
+        try:
+            db.session.execute(db.text("ALTER TABLE shop ADD COLUMN nearest_station VARCHAR(100) DEFAULT ''"))
+            db.session.commit()
+            print("📌 nearest_station カラムを追加しました。")
+        except Exception:
+            db.session.rollback()  # 既にカラムがある場合はスキップ
+
         # カラムが追加された最新のモデルを反映
-        db.create_all() 
+        db.create_all()
 
         with open(filename, encoding='utf-8-sig') as f:
             reader = csv.DictReader(f)
@@ -49,6 +57,10 @@ def import_shops_from_csv(filename='shops.csv'):
                 # 4. 重複チェック（店名と住所の組み合わせで判定）
                 shop = Shop.query.filter_by(name=name, address=address).first()
                 
+                # nearest_station / payment_methods の取得
+                nearest_station = (row.get('nearest_station') or '').strip()
+                payment_methods = (row.get('payment_methods') or '').strip()
+
                 if shop:
                     # ★ 既存データの上書き更新
                     shop.latitude = lat
@@ -56,6 +68,8 @@ def import_shops_from_csv(filename='shops.csv'):
                     shop.map_url = generated_url
                     shop.place_id = place_id
                     shop.plus_code = plus_code  # ★ 更新
+                    shop.nearest_station = nearest_station
+                    shop.payment_methods = payment_methods
                     shop.genres = row.get('genres', shop.genres)
                     shop.hours = row.get('hours', shop.hours)
                     shop.holiday = row.get('holiday', shop.holiday)
@@ -68,6 +82,7 @@ def import_shops_from_csv(filename='shops.csv'):
                     new_shop = Shop(
                         name=name,
                         address=address,
+                        nearest_station=nearest_station,
                         genres=row.get('genres', '古着'),
                         hours=row.get('hours', ''),
                         holiday=row.get('holiday', 'なし'),
@@ -77,9 +92,10 @@ def import_shops_from_csv(filename='shops.csv'):
                         price_range=row.get('price_range', '不明'),
                         latitude=lat,
                         longitude=lng,
-                        plus_code=plus_code, # ★ 新規保存
+                        plus_code=plus_code,
                         map_url=generated_url,
                         place_id=place_id,
+                        payment_methods=payment_methods,
                         rating=0.0,
                         review_count=0
                     )
