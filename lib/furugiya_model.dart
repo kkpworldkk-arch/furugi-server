@@ -19,6 +19,7 @@ class FurugiyaShop {
   final String mapUrl;
   final String paymentMethods;
   final List<String> imageUrls;
+  final String parking;
 
   FurugiyaShop({
     required this.id,
@@ -41,6 +42,7 @@ class FurugiyaShop {
     required this.mapUrl,
     required this.paymentMethods,
     required this.imageUrls,
+    required this.parking,
   });
 
   factory FurugiyaShop.fromJson(Map<String, dynamic> json) {
@@ -65,6 +67,7 @@ class FurugiyaShop {
       mapUrl: json['mapUrl'] ?? '',
       paymentMethods: json['paymentMethods'] ?? '不明',
       imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      parking: json['parking'] ?? '',
     );
   }
 }
