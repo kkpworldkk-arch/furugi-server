@@ -1,27 +1,45 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // リンクを開く機能
-import 'furugiya_model.dart'; 
+import 'package:url_launcher/url_launcher.dart';
+import 'furugiya_model.dart';
+import 'api_service.dart';
 
-class ShopDetailScreen extends StatelessWidget {
+class ShopDetailScreen extends StatefulWidget {
   final FurugiyaShop shop;
 
   const ShopDetailScreen({super.key, required this.shop});
 
-  Future<void> _openGoogleMaps(BuildContext context) async {
-    // 1. 店名と住所をつなげて「検索ワード」を作ります
-    final String query = "${shop.name} ${shop.address}";
-    
-    // 2. 日本語などをURLで使える記号に変換します
-    final String encodedQuery = Uri.encodeComponent(query);
-    
-    // 3. Googleマップの検索URL
-    final String googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$encodedQuery";
+  @override
+  State<ShopDetailScreen> createState() => _ShopDetailScreenState();
+}
 
-    // 4. URLを開きます
+class _ShopDetailScreenState extends State<ShopDetailScreen> {
+  late String _paymentMethods;
+  late String _hours;
+  late String _holiday;
+  late String _priceRange;
+
+  @override
+  void initState() {
+    super.initState();
+    _paymentMethods = widget.shop.paymentMethods;
+    _hours = widget.shop.hours;
+    _holiday = widget.shop.holiday;
+    _priceRange = widget.shop.priceRange;
+  }
+
+  Future<void> _openGoogleMaps(BuildContext context) async {
+    String googleMapsUrl;
+
+    if (widget.shop.mapUrl.isNotEmpty) {
+      googleMapsUrl = widget.shop.mapUrl;
+    } else {
+      final String encodedQuery = Uri.encodeComponent("${widget.shop.name} ${widget.shop.address}");
+      googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$encodedQuery";
+    }
+
     await _launchUrl(context, googleMapsUrl);
   }
 
-  // 通常のURLを開く関数
   Future<void> _launchUrl(BuildContext context, String urlString) async {
     if (urlString.trim().isEmpty) {
       _showSnack(context, "URLが登録されていません");
@@ -48,10 +66,100 @@ class ShopDetailScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  void _showEditDialog() {
+    final paymentCtrl = TextEditingController(text: _paymentMethods == '不明' ? '' : _paymentMethods);
+    final hoursCtrl = TextEditingController(text: _hours);
+    final holidayCtrl = TextEditingController(text: _holiday == 'なし' ? '' : _holiday);
+    final priceCtrl = TextEditingController(text: _priceRange == '不明' ? '' : _priceRange);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('店舗情報を編集'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: paymentCtrl,
+                decoration: const InputDecoration(
+                  labelText: '支払い方法',
+                  hintText: '例: 現金、クレジットカード',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: hoursCtrl,
+                decoration: const InputDecoration(
+                  labelText: '営業時間',
+                  hintText: '例: 11:00〜20:00',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: holidayCtrl,
+                decoration: const InputDecoration(
+                  labelText: '定休日',
+                  hintText: '例: 月曜日',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: priceCtrl,
+                decoration: const InputDecoration(
+                  labelText: '平均価格帯',
+                  hintText: '例: ¥1,000〜¥5,000',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await ApiService.updateShop(widget.shop.id, {
+                  'paymentMethods': paymentCtrl.text.trim(),
+                  'hours': hoursCtrl.text.trim(),
+                  'holiday': holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim(),
+                  'priceRange': priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim(),
+                });
+                setState(() {
+                  _paymentMethods = paymentCtrl.text.trim().isEmpty ? '不明' : paymentCtrl.text.trim();
+                  _hours = hoursCtrl.text.trim();
+                  _holiday = holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim();
+                  _priceRange = priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim();
+                });
+                if (mounted) _showSnack(context, '保存しました');
+              } catch (e) {
+                if (mounted) _showSnack(context, '保存に失敗しました: $e');
+              }
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(shop.name)),
+      appBar: AppBar(
+        title: Text(widget.shop.name),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: '情報を編集',
+            onPressed: _showEditDialog,
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +171,7 @@ class ShopDetailScreen extends StatelessWidget {
               color: Colors.grey.shade300,
               child: const Icon(Icons.store, size: 80, color: Colors.white),
             ),
-            
+
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -71,11 +179,11 @@ class ShopDetailScreen extends StatelessWidget {
                 children: [
                   // 店名
                   Text(
-                    shop.name,
+                    widget.shop.name,
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-                  
+
                   // ジャンルと評価
                   Row(
                     children: [
@@ -86,14 +194,14 @@ class ShopDetailScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          shop.genres.join(", "),
+                          widget.shop.genres.join(", "),
                           style: TextStyle(color: Colors.brown.shade800, fontSize: 12),
                         ),
                       ),
                       const Spacer(),
                       const Icon(Icons.star, color: Colors.orange, size: 20),
                       Text(
-                        "${shop.rating} (${shop.reviewCount}件)",
+                        "${widget.shop.rating} (${widget.shop.reviewCount}件)",
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -108,7 +216,7 @@ class ShopDetailScreen extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => _openGoogleMaps(context),
                       icon: const Icon(Icons.map),
-                      label: const Text("ここに行く (Googleマップ)", 
+                      label: const Text("ここに行く (Googleマップ)",
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue.shade700,
@@ -131,22 +239,23 @@ class ShopDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  _buildInfoRow(Icons.currency_yen, "平均価格帯", shop.priceRange),
-                  _buildInfoRow(Icons.access_time, "営業時間", shop.hours),
-                  // ★追加：定休日の表示
-                  _buildInfoRow(Icons.event_note, "定休日", shop.holiday),
-                  
+                  _buildInfoRow(Icons.currency_yen, "平均価格帯", _priceRange),
+                  _buildInfoRow(Icons.access_time, "営業時間", _hours),
+                  _buildInfoRow(Icons.event_note, "定休日", _holiday),
+                  _buildInfoRow(Icons.train, "最寄り駅", widget.shop.nearestStation),
+                  _buildInfoRow(Icons.payments_outlined, "支払い方法", _paymentMethods),
+
                   InkWell(
                     onTap: () => _openGoogleMaps(context),
-                    child: _buildInfoRow(Icons.location_on, "住所", shop.address, isLink: true),
+                    child: _buildInfoRow(Icons.location_on, "住所", widget.shop.address, isLink: true),
                   ),
-                  
-                  if (shop.homepageUrl.isNotEmpty)
-                    _buildLinkRow(context, Icons.language, "Webサイト", shop.homepageUrl),
 
-                  if (shop.snsUrl.isNotEmpty)
-                    _buildLinkRow(context, Icons.link, "SNS / Instagram", shop.snsUrl),
-                    
+                  if (widget.shop.homepageUrl.isNotEmpty)
+                    _buildLinkRow(context, Icons.language, "Webサイト", widget.shop.homepageUrl),
+
+                  if (widget.shop.snsUrl.isNotEmpty)
+                    _buildLinkRow(context, Icons.link, "SNS / Instagram", widget.shop.snsUrl),
+
                   const SizedBox(height: 40),
                 ],
               ),
@@ -174,9 +283,9 @@ class ShopDetailScreen extends StatelessWidget {
                 Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 const SizedBox(height: 2),
                 Text(
-                  content, 
+                  content,
                   style: TextStyle(
-                    fontSize: 15, 
+                    fontSize: 15,
                     color: isLink ? Colors.blue : Colors.black,
                     decoration: isLink ? TextDecoration.underline : null,
                   ),

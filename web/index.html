@@ -33,8 +33,11 @@
   <title>furugiya_map_app</title>
 <link rel="manifest" href="manifest.json">
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsmjE6Ao7RqzKyp2oZ-YtUp5AXDTJGHeE"></script>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Google Maps: Web版ではここにAPIキーが必要です -->
+  <!-- ビルド時: flutter run -d chrome --dart-define=GOOGLE_MAPS_API_KEY=YOUR_KEY -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAsmjE6Ao7RqzKyp2oZ-YtUp5AXDTJGHeE"></script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

@@ -36,6 +36,18 @@ class ApiService {
 
   // --- 以降、既存のメソッドはそのまま保持 ---
 
+  // 店舗情報更新
+  static Future<void> updateShop(int shopId, Map<String, dynamic> data) async {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/shops/$shopId'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('更新に失敗しました');
+    }
+  }
+
   // 店舗追加
   static Future<void> addShop(Map<String, dynamic> shopData) async {
     final response = await http.post(

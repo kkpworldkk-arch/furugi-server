@@ -60,7 +60,7 @@ class _ArticlePostScreenState extends State<ArticlePostScreen> {
                 onSaved: (v) => _content = v!,
               ),
               DropdownButtonFormField<String>(
-                value: _genre,
+                initialValue: _genre,
                 items: ['お知らせ', 'コラム'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                 onChanged: (v) => setState(() => _genre = v!),
               ),

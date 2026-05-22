@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'api_service.dart';
 
 class PostDigScreen extends StatefulWidget {
   const PostDigScreen({super.key});
@@ -22,8 +23,8 @@ class _PostDigScreenState extends State<PostDigScreen> {
   String? _selectedShopId;
   bool _isUploading = false;
 
-  // FlaskサーバーのURL
-  final String baseUrl = "http://10.0.2.2:5000";
+  // ApiServiceの共通ベースURLを使用（Web/Android両対応）
+  final String baseUrl = ApiService.baseUrl.replaceAll('/api', '');
 
   @override
   void initState() {

@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+# 秘匿情報
+.env
+*.env
+
+# Firebase設定ファイル (これらも本来は非推奨)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+.env
