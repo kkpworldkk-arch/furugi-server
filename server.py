@@ -40,8 +40,10 @@ class Shop(db.Model):
     sns_url = db.Column(db.String(200))
     hours = db.Column(db.String(100))
     description = db.Column(db.String(1000))
-    # ★追加：価格帯
     price_range = db.Column(db.String(50), default='不明')
+    holiday = db.Column(db.String(100), default='なし')
+    payment_methods = db.Column(db.String(200), default='不明')
+    parking = db.Column(db.String(20), default='')
 
 class Article(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -80,7 +82,10 @@ def get_shops():
             "snsUrl": shop.sns_url,
             "hours": shop.hours,
             "description": shop.description,
-            "priceRange": shop.price_range, # ★価格帯を返す
+            "priceRange": shop.price_range,
+            "holiday": shop.holiday or 'なし',
+            "paymentMethods": shop.payment_methods or '不明',
+            "parking": shop.parking or '',
             "imageUrls": []
         })
     return jsonify(output)
@@ -106,16 +111,36 @@ def add_shop():
         longitude=lng,
         genres=genres_str,
         hours=data.get('hours', ''),
+        holiday=data.get('holiday', 'なし'),
         homepage_url=data.get('homepageUrl', ''),
         sns_url=data.get('snsUrl', ''),
         description=data.get('description', ''),
-        price_range=data.get('priceRange', '不明'), # ★価格帯を保存
+        price_range=data.get('priceRange', '不明'),
+        payment_methods=data.get('paymentMethods', '不明'),
+        parking=data.get('parking', ''),
         rating=0.0,
         review_count=0
     )
     db.session.add(new_shop)
     db.session.commit()
     return jsonify({"message": "Shop added"}), 201
+
+@app.route('/api/shops/<int:shop_id>', methods=['PATCH'])
+def update_shop(shop_id):
+    shop = Shop.query.get_or_404(shop_id)
+    data = request.json
+    if 'hours' in data:
+        shop.hours = data['hours']
+    if 'holiday' in data:
+        shop.holiday = data['holiday']
+    if 'priceRange' in data:
+        shop.price_range = data['priceRange']
+    if 'paymentMethods' in data:
+        shop.payment_methods = data['paymentMethods']
+    if 'parking' in data:
+        shop.parking = data['parking']
+    db.session.commit()
+    return jsonify({"message": "Updated"}), 200
 
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
@@ -173,9 +198,24 @@ def get_lat_lng(address):
         pass
     return 35.6812, 139.7671
 
+def migrate_db():
+    """既存DBに不足カラムを追加する"""
+    new_columns = [
+        ("holiday", "VARCHAR(100) DEFAULT 'なし'"),
+        ("payment_methods", "VARCHAR(200) DEFAULT '不明'"),
+        ("parking", "VARCHAR(20) DEFAULT ''"),
+    ]
+    with db.engine.connect() as conn:
+        for col_name, col_def in new_columns:
+            try:
+                conn.execute(db.text(f"ALTER TABLE shop ADD COLUMN {col_name} {col_def}"))
+                conn.commit()
+            except Exception:
+                pass  # カラムが既に存在する場合は無視
+
 def seed_data():
-    # データベースを作り直す
     db.create_all()
+    migrate_db()
 
     # ▼ データが空っぽの時だけ、送ってくれたデータを注入する ▼
     if Shop.query.count() == 0:
