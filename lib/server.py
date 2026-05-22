@@ -231,6 +231,10 @@ def update_shop(shop_id):
         shop.description = data['description']
     if 'priceRange' in data:
         shop.price_range = data['priceRange']
+    if 'latitude' in data:
+        shop.latitude = data['latitude']
+    if 'longitude' in data:
+        shop.longitude = data['longitude']
     db.session.commit()
     return jsonify({"message": "更新しました"})
 
@@ -355,19 +359,19 @@ def seed_data():
             "hours": "12:00 - 20:00", "description": "高円寺初インディーズ古着屋。高円寺駅から最も近い古着屋", "price_range": "¥2000~"
         },
         # セカンドストリート
-        {"name": "2nd STREET 原宿店", "genres": "ヴィンテージ,ストリート", "address": "東京都渋谷区神宮前4-26-4", "nearest_station": "原宿駅", "latitude": 35.6692271, "longitude": 139.7081291, "hours": "11:00-21:00", "description": "メンズ強化店。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 高円寺店", "genres": "ヴィンテージ,アメカジ", "address": "東京都杉並区高円寺南4-6-7", "nearest_station": "高円寺駅", "latitude": 35.703028, "longitude": 139.6490492, "hours": "11:00-21:00", "description": "古着の街の旗艦店。", "price_range": "¥3,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "Super 2nd STREET 大宮日進店", "genres": "超大型,楽器,古着", "address": "埼玉県さいたま市北区日進町3-372", "nearest_station": "日進駅", "latitude": 35.9367519, "longitude": 139.5987896, "hours": "10:00-22:00", "description": "日本最大級の在庫。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET アメリカ村店", "genres": "ストリート,スニーカー", "address": "大阪府大阪市中央区西心斎橋2-18-5", "nearest_station": "心斎橋駅", "latitude": 34.6722428, "longitude": 135.4974877, "hours": "11:00-21:00", "description": "関西のストリートカルチャーの拠点。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 札幌狸小路4丁目店", "genres": "ブランド,ヴィンテージ", "address": "北海道札幌市中央区南2条西4-9-2", "nearest_station": "大通駅", "latitude": 43.0572281, "longitude": 141.3516235, "hours": "10:00-22:00", "description": "北海道最大の品揃え。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 仙台中央店", "genres": "セレクト,ブランド古着", "address": "宮城県仙台市青葉区中央2-4-10", "nearest_station": "仙台駅", "latitude": 38.26211, "longitude": 140.8713, "hours": "10:00-21:00", "description": "東北エリアのトレンド発信拠点", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 宇都宮簗瀬店", "genres": "トータル,古着全般", "address": "栃木県宇都宮市簗瀬町2512-1", "nearest_station": "宇都宮駅", "latitude": 36.5441314, "longitude": 139.8942151, "hours": "10:00-21:00", "description": "北関東の広大な店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "Super 2nd STREET 柏沼南店", "genres": "超大型,アウトドア", "address": "千葉県柏市風早1-8-1", "nearest_station": "柏駅", "latitude": 35.8397974, "longitude": 140.0045411, "hours": "10:00-21:00", "description": "東日本最大級。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "Super 2nd STREET 名古屋みなと店", "genres": "超大型,家具", "address": "愛知県名古屋市港区砂美町1-5", "nearest_station": "名古屋競馬場前駅", "latitude": 35.1065099, "longitude": 136.8717918, "hours": "10:00-21:00", "description": "東海地方最大の店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 堀江店", "genres": "デザイナーズ,モード", "address": "大阪府大阪市西区南堀江1-9-1", "nearest_station": "四ツ橋駅", "latitude": 34.67113, "longitude": 135.496079, "hours": "11:00-21:00", "description": "アーカイブ作品が揃う。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 神戸三宮店", "genres": "インポート,ハイブランド", "address": "兵庫県神戸市中央区加納町4-3-5", "nearest_station": "三宮駅", "latitude": 34.6945885, "longitude": 135.1931349, "hours": "11:00-21:00", "description": "欧州インポートブランドが強い。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 福岡天神2号店", "genres": "ヴィンテージ,メンズ", "address": "福岡県福岡市中央区大名2-1-4", "nearest_station": "天神駅", "latitude": 33.5887023, "longitude": 130.3960067, "hours": "11:00-21:00", "description": "マニア垂涎のヴィンテージ特化店。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
-        {"name": "2nd STREET 那覇小禄店", "genres": "夏服,アウトドア", "address": "沖縄県那覇市赤嶺2-1-7", "nearest_station": "赤嶺駅", "latitude": 26.1979829, "longitude": 127.6684142, "hours": "10:00-21:00", "description": "沖縄ならではの品揃え。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 原宿店", "genres": "ヴィンテージ,ストリート", "address": "東京都渋谷区神宮前4-26-4", "nearest_station": "原宿駅", "latitude": 35.6692271, "longitude": 139.7081291, "hours": "11:00-21:00", "description": "メンズ強化店。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 高円寺店", "genres": "ヴィンテージ,アメカジ", "address": "東京都杉並区高円寺南4-6-7", "nearest_station": "高円寺駅", "latitude": 35.703028, "longitude": 139.6490492, "hours": "11:00-21:00", "description": "古着の街の旗艦店。", "price_range": "¥3,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "スーパーセカンドストリート 大宮日進店", "genres": "超大型,楽器,古着", "address": "埼玉県さいたま市北区日進町3-372", "nearest_station": "日進駅", "latitude": 35.9367519, "longitude": 139.5987896, "hours": "10:00-22:00", "description": "日本最大級の在庫。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート アメリカ村店", "genres": "ストリート,スニーカー", "address": "大阪府大阪市中央区西心斎橋2-18-5", "nearest_station": "心斎橋駅", "latitude": 34.6722428, "longitude": 135.4974877, "hours": "11:00-21:00", "description": "関西のストリートカルチャーの拠点。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 札幌狸小路4丁目店", "genres": "ブランド,ヴィンテージ", "address": "北海道札幌市中央区南2条西4-9-2", "nearest_station": "大通駅", "latitude": 43.0572281, "longitude": 141.3516235, "hours": "10:00-22:00", "description": "北海道最大の品揃え。", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 仙台中央店", "genres": "セレクト,ブランド古着", "address": "宮城県仙台市青葉区中央2-4-10", "nearest_station": "仙台駅", "latitude": 38.26211, "longitude": 140.8713, "hours": "10:00-21:00", "description": "東北エリアのトレンド発信拠点", "price_range": "¥5,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 宇都宮簗瀬店", "genres": "トータル,古着全般", "address": "栃木県宇都宮市簗瀬町2512-1", "nearest_station": "宇都宮駅", "latitude": 36.5441314, "longitude": 139.8942151, "hours": "10:00-21:00", "description": "北関東の広大な店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "スーパーセカンドストリート 柏沼南店", "genres": "超大型,アウトドア", "address": "千葉県柏市風早1-8-1", "nearest_station": "柏駅", "latitude": 35.8397974, "longitude": 140.0045411, "hours": "10:00-21:00", "description": "東日本最大級。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "スーパーセカンドストリート 名古屋みなと店", "genres": "超大型,家具", "address": "愛知県名古屋市港区砂美町1-5", "nearest_station": "名古屋競馬場前駅", "latitude": 35.1065099, "longitude": 136.8717918, "hours": "10:00-21:00", "description": "東海地方最大の店舗。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 堀江店", "genres": "デザイナーズ,モード", "address": "大阪府大阪市西区南堀江1-9-1", "nearest_station": "四ツ橋駅", "latitude": 34.67113, "longitude": 135.496079, "hours": "11:00-21:00", "description": "アーカイブ作品が揃う。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 神戸三宮店", "genres": "インポート,ハイブランド", "address": "兵庫県神戸市中央区加納町4-3-5", "nearest_station": "三宮駅", "latitude": 34.6945885, "longitude": 135.1931349, "hours": "11:00-21:00", "description": "欧州インポートブランドが強い。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 福岡天神2号店", "genres": "ヴィンテージ,メンズ", "address": "福岡県福岡市中央区大名2-1-4", "nearest_station": "天神駅", "latitude": 33.5887023, "longitude": 130.3960067, "hours": "11:00-21:00", "description": "マニア垂涎のヴィンテージ特化店。", "price_range": "¥10,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
+        {"name": "セカンドストリート 那覇小禄店", "genres": "夏服,アウトドア", "address": "沖縄県那覇市赤嶺2-1-7", "nearest_station": "赤嶺駅", "latitude": 26.1979829, "longitude": 127.6684142, "hours": "10:00-21:00", "description": "沖縄ならではの品揃え。", "price_range": "¥1,000 ~", "payment_methods": "クレジットカード・スマホバーコード決済・現金"},
     ]
 
     added_count = 0
