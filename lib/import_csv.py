@@ -3,12 +3,17 @@ import os
 import urllib.parse
 from server import app, db, Shop 
 
-def import_shops_from_csv(filename='shops.csv'):
+def import_shops_from_csv(filename='lib/shops.csv'):
+    # もしデフォルトファイルがない場合は、ルートの shops.csv も探す
     if not os.path.exists(filename):
-        print(f"❌ エラー: {filename} が見つかりません。")
-        return
+        alt = 'shops.csv'
+        if os.path.exists(alt):
+            filename = alt
+        else:
+            print(f"❌ エラー: {filename} および {alt} のいずれも見つかりません。")
+            return
 
-    print("🚀 座標、Plus Code、Googleマップリンクを最適化しながらインポートを開始します...")
+    print(f"🚀 {filename} からデータを読み込み、座標/Plus Code/Googleマップリンクを最適化します...")
 
     with app.app_context():
         # 既存DBに nearest_station カラムがなければ追加
