@@ -1,12 +1,23 @@
 import csv
 import os
+import sys
 import urllib.parse
+
+SCRIPT_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 from server import app, db, Shop 
 
-def import_shops_from_csv(filename='shops.csv'):
+def import_shops_from_csv(filename='lib/shops.csv'):
     if not os.path.exists(filename):
-        print(f"❌ エラー: {filename} が見つかりません。")
-        return
+        alt = os.path.join(ROOT_DIR, 'shops.csv')
+        if os.path.exists(alt):
+            filename = alt
+        else:
+            print(f"❌ エラー: {filename} および {alt} のいずれも見つかりません。")
+            return
 
     print("🚀 座標、Plus Code、Googleマップリンクを最適化しながらインポートを開始します...")
 
@@ -56,46 +67,30 @@ def import_shops_from_csv(filename='shops.csv'):
 
                 # 4. 重複チェック（店名と住所の組み合わせで判定）
                 shop = Shop.query.filter_by(name=name, address=address).first()
-                
-                # nearest_station / payment_methods の取得
-                nearest_station = (row.get('nearest_station') or '').strip()
-                payment_methods = (row.get('payment_methods') or '').strip()
 
                 if shop:
                     # ★ 既存データの上書き更新
                     shop.latitude = lat
                     shop.longitude = lng
-                    shop.map_url = generated_url
-                    shop.place_id = place_id
-                    shop.plus_code = plus_code  # ★ 更新
-                    shop.nearest_station = nearest_station
-                    shop.payment_methods = payment_methods
                     shop.genres = row.get('genres', shop.genres)
                     shop.hours = row.get('hours', shop.hours)
-                    shop.holiday = row.get('holiday', shop.holiday)
                     shop.description = row.get('description', shop.description)
                     shop.price_range = row.get('price_range', shop.price_range)
                     update_count += 1
-                    print(f"🔄 更新完了: {name} (PlusCode: {'あり' if plus_code else 'なし'})")
+                    print(f"🔄 更新完了: {name}")
                 else:
                     # ★ 新規登録
                     new_shop = Shop(
                         name=name,
                         address=address,
-                        nearest_station=nearest_station,
                         genres=row.get('genres', '古着'),
                         hours=row.get('hours', ''),
-                        holiday=row.get('holiday', 'なし'),
                         homepage_url=row.get('homepage_url', ''),
                         sns_url=row.get('sns_url', ''),
                         description=row.get('description', ''),
                         price_range=row.get('price_range', '不明'),
                         latitude=lat,
                         longitude=lng,
-                        plus_code=plus_code,
-                        map_url=generated_url,
-                        place_id=place_id,
-                        payment_methods=payment_methods,
                         rating=0.0,
                         review_count=0
                     )
