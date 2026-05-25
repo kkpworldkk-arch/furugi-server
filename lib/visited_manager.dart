@@ -1,7 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FavoritesManager {
-  static const String _key = 'favIds';
+class VisitedManager {
+  static const String _key = 'visitedIds';
+
   static Future<void> toggle(int id) async {
     final prefs = await SharedPreferences.getInstance();
     List<String> ids = prefs.getStringList(_key) ?? [];
@@ -13,10 +14,12 @@ class FavoritesManager {
     }
     await prefs.setStringList(_key, ids);
   }
-  static Future<bool> isFav(int id) async {
+
+  static Future<bool> isVisited(int id) async {
     final prefs = await SharedPreferences.getInstance();
     return (prefs.getStringList(_key) ?? []).contains(id.toString());
   }
+
   static Future<List<int>> getIds() async {
     final prefs = await SharedPreferences.getInstance();
     return (prefs.getStringList(_key) ?? []).map((e) => int.parse(e)).toList();

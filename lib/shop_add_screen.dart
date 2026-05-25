@@ -15,11 +15,12 @@ class _ShopAddScreenState extends State<ShopAddScreen> {
   String _address = '';
   String _genre = '';
   String _hours = '';
-  String _holiday = ''; // ★追加：定休日を保存する変数
+  String _holiday = '';
   String _homepage = '';
   String _sns = '';
   String _desc = '';
   String _price = '';
+  String _parking = '';
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -31,11 +32,12 @@ class _ShopAddScreenState extends State<ShopAddScreen> {
         "address": _address,
         "genres": _genre.split(','),
         "hours": _hours,
-        "holiday": _holiday, // ★追加：サーバーに送るデータに含める
+        "holiday": _holiday,
         "homepageUrl": _homepage,
         "snsUrl": _sns,
         "description": _desc,
         "priceRange": _price,
+        "parking": _parking,
         "latitude": 0.0,
         "longitude": 0.0,
       };
@@ -103,9 +105,13 @@ class _ShopAddScreenState extends State<ShopAddScreen> {
                 onSaved: (val) => _sns = val!,
               ),
               TextFormField(
-                decoration: const InputDecoration(labelText: '説明'), 
-                maxLines: 3, 
+                decoration: const InputDecoration(labelText: '説明'),
+                maxLines: 3,
                 onSaved: (val) => _desc = val!,
+              ),
+              TextFormField(
+                decoration: const InputDecoration(labelText: '駐車場', hintText: '例: あり・なし・3台'),
+                onSaved: (val) => _parking = val!,
               ),
               const SizedBox(height: 20),
               ElevatedButton(

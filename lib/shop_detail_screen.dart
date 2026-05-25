@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'furugiya_model.dart';
 import 'api_service.dart';
 import 'favorites_manager.dart';
+import 'visited_manager.dart';
 
 class ShopDetailScreen extends StatefulWidget {
   final FurugiyaShop shop;
@@ -19,8 +20,14 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
   late String _holiday;
   late String _priceRange;
   late String _parking;
+  late double _rating;
+  late int _reviewCount;
   bool _isFav = false;
   bool _hasVisited = false;
+  List<ShopReview> _reviews = [];
+  List<ShopNotice> _notices = [];
+  bool _reviewsLoading = true;
+  bool _noticesLoading = true;
 
   @override
   void initState() {
@@ -30,7 +37,35 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     _holiday = widget.shop.holiday;
     _priceRange = widget.shop.priceRange;
     _parking = widget.shop.parking;
+    _rating = widget.shop.rating;
+    _reviewCount = widget.shop.reviewCount;
     _loadFavStatus();
+    _loadVisitedStatus();
+    _loadReviews();
+    _loadNotices();
+  }
+
+  Future<void> _loadVisitedStatus() async {
+    final visited = await VisitedManager.isVisited(widget.shop.id);
+    if (mounted) setState(() => _hasVisited = visited);
+  }
+
+  Future<void> _loadReviews() async {
+    try {
+      final reviews = await ApiService.getReviews(widget.shop.id);
+      if (mounted) setState(() { _reviews = reviews; _reviewsLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _reviewsLoading = false);
+    }
+  }
+
+  Future<void> _loadNotices() async {
+    try {
+      final notices = await ApiService.getNotices(widget.shop.id);
+      if (mounted) setState(() { _notices = notices; _noticesLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _noticesLoading = false);
+    }
   }
 
   Future<void> _loadFavStatus() async {
@@ -108,6 +143,9 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     final hoursCtrl = TextEditingController(text: _hours);
     final holidayCtrl = TextEditingController(text: _holiday == 'なし' ? '' : _holiday);
     final priceCtrl = TextEditingController(text: _priceRange == '不明' ? '' : _priceRange);
+    final parkingCtrl = TextEditingController(text: _parking);
+    final latCtrl = TextEditingController(text: widget.shop.latitude.toString());
+    final lngCtrl = TextEditingController(text: widget.shop.longitude.toString());
 
     showDialog(
       context: context,
@@ -140,6 +178,28 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 decoration: const InputDecoration(
                   labelText: '平均価格帯', hintText: '例: ¥1,000〜¥5,000'),
               ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: parkingCtrl,
+                decoration: const InputDecoration(
+                  labelText: '駐車場', hintText: '例: あり・なし・3台'),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 4),
+              const Text('ピン位置の修正', style: TextStyle(fontSize: 12, color: Colors.grey)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: latCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: const InputDecoration(labelText: '緯度 (latitude)', hintText: '例: 35.6812'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: lngCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                decoration: const InputDecoration(labelText: '経度 (longitude)', hintText: '例: 139.7671'),
+              ),
             ],
           ),
         ),
@@ -149,17 +209,23 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
+                final lat = double.tryParse(latCtrl.text.trim());
+                final lng = double.tryParse(lngCtrl.text.trim());
                 await ApiService.updateShop(widget.shop.id, {
                   'paymentMethods': paymentCtrl.text.trim(),
                   'hours': hoursCtrl.text.trim(),
                   'holiday': holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim(),
                   'priceRange': priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim(),
+                  'parking': parkingCtrl.text.trim(),
+                  if (lat != null) 'latitude': lat,
+                  if (lng != null) 'longitude': lng,
                 });
                 setState(() {
                   _paymentMethods = paymentCtrl.text.trim().isEmpty ? '不明' : paymentCtrl.text.trim();
                   _hours = hoursCtrl.text.trim();
                   _holiday = holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim();
                   _priceRange = priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim();
+                  _parking = parkingCtrl.text.trim();
                 });
                 if (mounted) _showSnack(context, '保存しました');
               } catch (e) {
@@ -169,6 +235,80 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
             child: const Text('保存'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showReviewDialog() {
+    final nicknameCtrl = TextEditingController();
+    final commentCtrl = TextEditingController();
+    double selectedRating = 3;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('口コミを投稿'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: nicknameCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'ニックネーム（省略可）', hintText: '匿名'),
+                ),
+                const SizedBox(height: 16),
+                const Text('評価', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Row(
+                  children: List.generate(5, (i) => GestureDetector(
+                    onTap: () => setDialogState(() => selectedRating = i + 1.0),
+                    child: Icon(
+                      i < selectedRating ? Icons.star : Icons.star_border,
+                      color: Colors.orange, size: 32,
+                    ),
+                  )),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: commentCtrl,
+                  maxLines: 4,
+                  decoration: const InputDecoration(
+                    labelText: 'コメント', hintText: '店舗の感想を書いてください'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  final result = await ApiService.postReview(
+                    widget.shop.id,
+                    nicknameCtrl.text.trim(),
+                    selectedRating,
+                    commentCtrl.text.trim(),
+                  );
+                  await _loadReviews();
+                  if (mounted) {
+                    setState(() {
+                      _rating = (result['newRating'] as num).toDouble();
+                      _reviewCount = result['reviewCount'] as int;
+                    });
+                    _showSnack(context, '口コミを投稿しました');
+                  }
+                } catch (e) {
+                  if (mounted) _showSnack(context, '投稿に失敗しました: $e');
+                }
+              },
+              child: const Text('投稿'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -246,21 +386,19 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   Row(
                     children: [
                       ...List.generate(5, (i) => Icon(
-                        i < widget.shop.rating.floor()
+                        i < _rating.floor()
                             ? Icons.star
-                            : (i < widget.shop.rating ? Icons.star_half : Icons.star_border),
+                            : (i < _rating ? Icons.star_half : Icons.star_border),
                         color: Colors.orange, size: 20,
                       )),
                       const SizedBox(width: 6),
                       Text(
-                        widget.shop.rating > 0
-                            ? widget.shop.rating.toStringAsFixed(1)
-                            : '-',
+                        _rating > 0 ? _rating.toStringAsFixed(1) : '-',
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold, color: Colors.orange),
                       ),
                       const SizedBox(width: 4),
-                      Text('(${widget.shop.reviewCount}件のレビュー)',
+                      Text('($_reviewCount件のレビュー)',
                           style: TextStyle(fontSize: 13, color: Colors.grey[600])),
                     ],
                   ),
@@ -273,12 +411,17 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                       // 行った！ボタン
                       Expanded(
                         child: GestureDetector(
-                          onTap: () {
-                            setState(() => _hasVisited = !_hasVisited);
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(_hasVisited ? 'この店舗に行った記録を追加しました！' : '訪問記録を取り消しました'),
-                              duration: const Duration(seconds: 1),
-                            ));
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await VisitedManager.toggle(widget.shop.id);
+                            final visited = await VisitedManager.isVisited(widget.shop.id);
+                            if (mounted) {
+                              setState(() => _hasVisited = visited);
+                              messenger.showSnackBar(SnackBar(
+                                content: Text(visited ? 'この店舗に行った記録を追加しました！' : '訪問記録を取り消しました'),
+                                duration: const Duration(seconds: 1),
+                              ));
+                            }
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
@@ -381,6 +524,117 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                 ),
               ),
             ],
+
+            // お知らせセクション
+            const SizedBox(height: 8),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.campaign_outlined, size: 18, color: Colors.orange[700]),
+                      const SizedBox(width: 6),
+                      const Text('店舗からのお知らせ',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (_noticesLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_notices.isEmpty)
+                    Text('現在お知らせはありません',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]))
+                  else
+                    ..._notices.map((n) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: Text(n.title,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14))),
+                              Text(n.date,
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(n.content,
+                              style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+                        ],
+                      ),
+                    )),
+                ],
+              ),
+            ),
+
+            // 口コミセクション
+            const SizedBox(height: 8),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('みんなの口コミ',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ElevatedButton.icon(
+                        onPressed: _showReviewDialog,
+                        icon: const Icon(Icons.edit, size: 16),
+                        label: const Text('口コミを書く', style: TextStyle(fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_reviewsLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_reviews.isEmpty)
+                    Text('まだ口コミがありません。最初の口コミを書いてみましょう！',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]))
+                  else
+                    ..._reviews.map((r) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              ...List.generate(5, (i) => Icon(
+                                i < r.rating ? Icons.star : Icons.star_border,
+                                color: Colors.orange, size: 16,
+                              )),
+                              const SizedBox(width: 8),
+                              Text(r.nickname,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Spacer(),
+                              Text(r.date,
+                                  style: TextStyle(fontSize: 11, color: Colors.grey[400])),
+                            ],
+                          ),
+                          if (r.comment.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(r.comment,
+                                style: TextStyle(fontSize: 13, color: Colors.grey[800])),
+                          ],
+                          const Divider(height: 20),
+                        ],
+                      ),
+                    )),
+                ],
+              ),
+            ),
 
             const SizedBox(height: 40),
           ],

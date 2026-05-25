@@ -83,8 +83,39 @@ class ApiService {
     }
   }
 
-  // レビュー投稿（ダミー）
-  static Future<void> postReview(int shopId, double rating, String comment) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+  // レビュー一覧取得
+  static Future<List<ShopReview>> getReviews(int shopId) async {
+    final response = await http.get(Uri.parse('$baseUrl/shops/$shopId/reviews'));
+    if (response.statusCode == 200) {
+      final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body.map((item) => ShopReview.fromJson(item)).toList();
+    } else {
+      throw Exception('口コミの読み込みに失敗しました');
+    }
+  }
+
+  // レビュー投稿
+  static Future<Map<String, dynamic>> postReview(
+      int shopId, String nickname, double rating, String comment) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/shops/$shopId/reviews'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({"nickname": nickname, "rating": rating, "comment": comment}),
+    );
+    if (response.statusCode != 201) {
+      throw Exception('口コミの投稿に失敗しました');
+    }
+    return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  // お知らせ取得
+  static Future<List<ShopNotice>> getNotices(int shopId) async {
+    final response = await http.get(Uri.parse('$baseUrl/shops/$shopId/notices'));
+    if (response.statusCode == 200) {
+      final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body.map((item) => ShopNotice.fromJson(item)).toList();
+    } else {
+      throw Exception('お知らせの読み込みに失敗しました');
+    }
   }
 }

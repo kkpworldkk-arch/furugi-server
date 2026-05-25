@@ -1,3 +1,6 @@
 Flask
 flask-cors
+flask-sqlalchemy
+geopy
 gunicorn
+psycopg2-binary

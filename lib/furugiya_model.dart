@@ -72,6 +72,55 @@ class FurugiyaShop {
   }
 }
 
+class ShopReview {
+  final int id;
+  final String nickname;
+  final double rating;
+  final String comment;
+  final String date;
+
+  ShopReview({
+    required this.id,
+    required this.nickname,
+    required this.rating,
+    required this.comment,
+    required this.date,
+  });
+
+  factory ShopReview.fromJson(Map<String, dynamic> json) {
+    return ShopReview(
+      id: json['id'] ?? 0,
+      nickname: json['nickname'] ?? '匿名',
+      rating: (json['rating'] ?? 0.0).toDouble(),
+      comment: json['comment'] ?? '',
+      date: json['date'] ?? '',
+    );
+  }
+}
+
+class ShopNotice {
+  final int id;
+  final String title;
+  final String content;
+  final String date;
+
+  ShopNotice({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.date,
+  });
+
+  factory ShopNotice.fromJson(Map<String, dynamic> json) {
+    return ShopNotice(
+      id: json['id'] ?? 0,
+      title: json['title'] ?? '',
+      content: json['content'] ?? '',
+      date: json['date'] ?? '',
+    );
+  }
+}
+
 class FurugiyaArticle {
   final int id;
   final String title;
