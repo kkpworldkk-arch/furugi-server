@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'furugiya_model.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:5000/api';
+  static const String baseUrl = 'https://web-production-632bbc.up.railway.app/api';
 
   // 修正：引数 {String? query, String? genre} を追加
   static Future<List<FurugiyaShop>> getShops({String? query, String? genre}) async {
@@ -81,6 +81,21 @@ class ApiService {
     if (response.statusCode != 201) {
       throw Exception('記事の投稿に失敗しました');
     }
+  }
+
+  // 住所→座標変換
+  static Future<Map<String, double>?> geocode(String address) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/geocode?address=${Uri.encodeComponent(address)}'),
+    );
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return {
+        'latitude': (body['latitude'] as num).toDouble(),
+        'longitude': (body['longitude'] as num).toDouble(),
+      };
+    }
+    return null;
   }
 
   // レビュー一覧取得

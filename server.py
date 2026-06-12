@@ -4,7 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 from geopy.geocoders import Nominatim
 from datetime import datetime
 import os
-import time
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -89,6 +88,12 @@ class Notice(db.Model):
 @app.route('/')
 def home():
     return "古着屋マップAPIサーバー稼働中！"
+
+@app.route('/api/geocode', methods=['GET'])
+def geocode():
+    address = request.args.get('address', '')
+    lat, lng = get_lat_lng(address)
+    return jsonify({"latitude": lat, "longitude": lng})
 
 @app.route('/api/shops', methods=['GET'])
 def get_shops():

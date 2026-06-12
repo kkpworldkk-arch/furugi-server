@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'base_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  dotenv.load(fileName: ".env").then((_) {
-    runApp(const MyApp());
-  });
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {
+    // Web環境では.envが利用不可のためスキップ
+  }
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {

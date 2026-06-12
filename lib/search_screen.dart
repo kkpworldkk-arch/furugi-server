@@ -19,7 +19,8 @@ class _SearchScreenState extends State<SearchScreen> {
   String _sortBy = '評価順';
 
   static const List<String> _genres = [
-    'すべて', 'ヴィンテージ', 'アメカジ', 'ストリート', 'レディース', 'ブランド古着'
+    'すべて', 'ヴィンテージ', 'アメカジ', 'ストリート', 'レディース',
+    'ブランド古着', 'ミリタリー', 'ワーク', 'スポーツ', 'Y2K', 'アウトドア',
   ];
 
   @override
@@ -76,6 +77,11 @@ class _SearchScreenState extends State<SearchScreen> {
       case 'ストリート':  return const Color(0xFF6A1B9A);
       case 'レディース':  return const Color(0xFFAD1457);
       case 'ブランド古着': return const Color(0xFF00695C);
+      case 'ミリタリー':  return const Color(0xFF33691E);
+      case 'ワーク':     return const Color(0xFF37474F);
+      case 'スポーツ':   return const Color(0xFF01579B);
+      case 'Y2K':       return const Color(0xFFD81B60);
+      case 'アウトドア':  return const Color(0xFF2E7D32);
       default:          return const Color(0xFF5D4037);
     }
   }

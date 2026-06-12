@@ -42,6 +42,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       case 'ストリート':  return const Color(0xFF6A1B9A);
       case 'レディース':  return const Color(0xFFAD1457);
       case 'ブランド古着': return const Color(0xFF00695C);
+      case 'ミリタリー':  return const Color(0xFF33691E);
+      case 'ワーク':     return const Color(0xFF37474F);
+      case 'スポーツ':   return const Color(0xFF01579B);
+      case 'Y2K':       return const Color(0xFFD81B60);
+      case 'アウトドア':  return const Color(0xFF2E7D32);
       default:          return const Color(0xFF5D4037);
     }
   }

@@ -20,7 +20,8 @@ class _AddShopSheetState extends State<AddShopSheet> {
 
   final List<String> _allGenres = [
     'ヴィンテージ', 'アメカジ', 'ストリート', 'レディース',
-    'ブランド古着', 'US古着', 'スニーカー', 'その他'
+    'ブランド古着', 'ミリタリー', 'ワーク', 'スポーツ', 'Y2K', 'アウトドア',
+    'US古着', 'スニーカー', 'その他',
   ];
   final Set<String> _selectedGenres = {};
 
@@ -104,6 +105,7 @@ class _AddShopSheetState extends State<AddShopSheet> {
                 decoration: const InputDecoration(
                   labelText: '最寄り駅',
                   prefixIcon: Icon(Icons.train),
+                  hintText: '例: 下北沢駅　複数は「、」で区切る',
                 ),
               ),
               const SizedBox(height: 16),
