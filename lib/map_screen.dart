@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:pointer_interceptor/pointer_interceptor.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'api_service.dart';
 import 'furugiya_model.dart';
@@ -435,52 +436,54 @@ class _MapScreenState extends State<MapScreen> {
       left: 0,
       right: 0,
       bottom: 0,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2)),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ヘッダー
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                children: [
-                  const Icon(Icons.storefront, size: 15,
-                      color: Color(0xFF5D4037)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'このエリア ${_visibleShops.length}件',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                      color: Color(0xFF5D4037),
+      child: PointerInterceptor(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2)),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ヘッダー
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.storefront, size: 15,
+                        color: Color(0xFF5D4037)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'このエリア ${_visibleShops.length}件',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF5D4037),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // 横スクロールカード
-            SizedBox(
-              height: 115,
-              child: _visibleShops.isEmpty
-                ? const Center(
-                    child: Text('このエリアに店舗はありません',
-                        style: TextStyle(fontSize: 13, color: Colors.grey)),
-                  )
-                : ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    itemCount: _visibleShops.length,
-                    itemBuilder: (context, index) =>
-                        _buildDesktopCard(_visibleShops[index]),
-                  ),
-            ),
-          ],
+              // 横スクロールカード
+              SizedBox(
+                height: 115,
+                child: _visibleShops.isEmpty
+                  ? const Center(
+                      child: Text('このエリアに店舗はありません',
+                          style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      itemCount: _visibleShops.length,
+                      itemBuilder: (context, index) =>
+                          _buildDesktopCard(_visibleShops[index]),
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -574,88 +577,87 @@ class _MapScreenState extends State<MapScreen> {
       snap: true,
       snapSizes: const [0.07, 0.13, 0.55],
       builder: (context, scrollController) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black26,
-                  blurRadius: 12,
-                  offset: Offset(0, -2)),
-            ],
-          ),
-          child: Column(
-            children: [
-              // ドラッグハンドル
-              GestureDetector(
-                onTap: () {
-                  final current = _sheetController.size;
-                  final next = current < 0.3 ? 0.55 : 0.07;
-                  _sheetController.animateTo(
-                    next,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                  );
-                },
-                child: Container(
-                  color: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 40, height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(2),
+        return PointerInterceptor(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              boxShadow: [
+                BoxShadow(color: Colors.black26, blurRadius: 12, offset: Offset(0, -2)),
+              ],
+            ),
+            child: Column(
+              children: [
+                // ドラッグハンドル
+                GestureDetector(
+                  onTap: () {
+                    final current = _sheetController.size;
+                    final next = current < 0.3 ? 0.55 : 0.07;
+                    _sheetController.animateTo(
+                      next,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  },
+                  child: Container(
+                    color: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 40, height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.storefront,
-                              size: 14, color: Color(0xFF5D4037)),
-                          const SizedBox(width: 5),
-                          Text(
-                            'このエリア ${_visibleShops.length}件',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF5D4037),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.storefront,
+                                size: 14, color: Color(0xFF5D4037)),
+                            const SizedBox(width: 5),
+                            Text(
+                              'このエリア ${_visibleShops.length}件',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5D4037),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            _sheetController.isAttached &&
-                                    _sheetController.size > 0.3
-                                ? Icons.keyboard_arrow_down
-                                : Icons.keyboard_arrow_up,
-                            size: 16,
-                            color: Colors.grey[500],
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 6),
+                            Icon(
+                              _sheetController.isAttached &&
+                                      _sheetController.size > 0.3
+                                  ? Icons.keyboard_arrow_down
+                                  : Icons.keyboard_arrow_up,
+                              size: 16,
+                              color: Colors.grey[500],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const Divider(height: 1),
-              // 店舗リスト
-              Expanded(
-                child: _visibleShops.isEmpty
-                  ? const Center(
-                      child: Text('このエリアに店舗はありません',
-                          style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      itemCount: _visibleShops.length,
-                      itemBuilder: (context, index) =>
-                          _buildMobileListTile(_visibleShops[index]),
-                    ),
-              ),
-            ],
+                const Divider(height: 1),
+                // 店舗リスト
+                Expanded(
+                  child: _visibleShops.isEmpty
+                    ? const Center(
+                        child: Text('このエリアに店舗はありません',
+                            style: TextStyle(fontSize: 13, color: Colors.grey)),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        itemCount: _visibleShops.length,
+                        itemBuilder: (context, index) =>
+                            _buildMobileListTile(_visibleShops[index]),
+                      ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -777,9 +779,9 @@ class _MapScreenState extends State<MapScreen> {
 
           // 2. 検索・ジャンルUI（編集モード中は非表示）
           if (!inEditMode)
-            SafeArea(
-              child: Column(
-                // min にすることで透明な余白からタッチが漏れるのを防ぐ
+            PointerInterceptor(
+              child: SafeArea(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // 検索バー：白背景Containerがタッチを吸収
@@ -861,6 +863,7 @@ class _MapScreenState extends State<MapScreen> {
                 ],
               ),
             ),
+          ),
 
           // 3. 店舗パネル（デスクトップ: 下部ストリップ / モバイル: ボトムシート）
           if (!inEditMode) ...[
@@ -870,17 +873,19 @@ class _MapScreenState extends State<MapScreen> {
               _buildMobileBottomSheet(),
           ],
 
-          // 4. FAB（ScaffoldでなくStackに配置して位置を制御）
+          // 4. FAB（Positionedは必ずStack直下、FAB本体をPointerInterceptorで包む）
           if (!inEditMode)
             Positioned(
               right: 16,
               bottom: fabBottomPadding,
-              child: FloatingActionButton.extended(
-                onPressed: _openAddShopForm,
-                backgroundColor: Colors.green.shade700,
-                icon: const Icon(Icons.add_location_alt, color: Colors.white),
-                label: const Text('古着屋を追加',
-                    style: TextStyle(color: Colors.white)),
+              child: PointerInterceptor(
+                child: FloatingActionButton.extended(
+                  onPressed: _openAddShopForm,
+                  backgroundColor: Colors.green.shade700,
+                  icon: const Icon(Icons.add_location_alt, color: Colors.white),
+                  label: const Text('古着屋を追加',
+                      style: TextStyle(color: Colors.white)),
+                ),
               ),
             ),
 
