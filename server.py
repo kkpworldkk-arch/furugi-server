@@ -81,6 +81,15 @@ class Notice(db.Model):
     content = db.Column(db.String(1000))
     date = db.Column(db.String(20))
 
+class ShopMedia(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    shop_id = db.Column(db.Integer, db.ForeignKey('shop.id'), nullable=False)
+    title = db.Column(db.String(200))
+    source = db.Column(db.String(100))   # 掲載メディア名
+    url = db.Column(db.String(500), default='')
+    description = db.Column(db.String(500), default='')
+    date = db.Column(db.String(20))
+
 # ==========================================
 #  API エンドポイント
 # ==========================================
@@ -247,6 +256,34 @@ def get_notices(shop_id):
         "date": n.date or '',
     } for n in notices])
 
+@app.route('/api/shops/<int:shop_id>/media', methods=['GET'])
+def get_media(shop_id):
+    items = ShopMedia.query.filter_by(shop_id=shop_id).order_by(ShopMedia.id.desc()).all()
+    return jsonify([{
+        "id": m.id,
+        "title": m.title or '',
+        "source": m.source or '',
+        "url": m.url or '',
+        "description": m.description or '',
+        "date": m.date or '',
+    } for m in items])
+
+@app.route('/api/shops/<int:shop_id>/media', methods=['POST'])
+def add_media(shop_id):
+    Shop.query.get_or_404(shop_id)
+    data = request.json
+    media = ShopMedia(
+        shop_id=shop_id,
+        title=data.get('title', ''),
+        source=data.get('source', ''),
+        url=data.get('url', ''),
+        description=data.get('description', ''),
+        date=datetime.now().strftime('%Y-%m-%d'),
+    )
+    db.session.add(media)
+    db.session.commit()
+    return jsonify({"message": "Media added"}), 201
+
 @app.route('/api/articles', methods=['GET'])
 def get_articles():
     articles = Article.query.all()
@@ -333,6 +370,17 @@ def admin_import_csv():
     db.session.commit()
     return jsonify({"message": f"{imported}件インポートしました"}), 200
 
+@app.route('/api/admin/seed_aomori', methods=['POST'])
+def admin_seed_aomori():
+    data = request.json or {}
+    admin = Admin.query.first()
+    if not admin or admin.password != data.get('password'):
+        return jsonify({"error": "NG"}), 401
+    with app.app_context():
+        seed_aomori_shops()
+    count = Shop.query.filter(Shop.address.like('%青森%')).count()
+    return jsonify({"message": "完了", "aomori_count": count}), 200
+
 @app.route('/api/admin/login', methods=['POST'])
 def login():
     password = request.json.get('password')
@@ -377,10 +425,7 @@ def migrate_db():
                 pass  # カラムが既に存在する場合は無視
 
 def seed_aomori_shops():
-    """青森県の古着屋データを初回のみ追加"""
-    if Shop.query.filter_by(name='古着屋 TOY SOLDIERS').first():
-        return
-
+    """青森県の古着屋データを追加（各店舗ごとに重複チェック）"""
     aomori_shops = [
         # ── 青森市 ────────────────────────────────────────────
         {
@@ -677,7 +722,10 @@ def seed_aomori_shops():
         },
     ]
 
+    added = 0
     for d in aomori_shops:
+        if Shop.query.filter_by(name=d['name']).first():
+            continue
         db.session.add(Shop(
             name=d['name'],
             address=d.get('address', ''),
@@ -698,8 +746,9 @@ def seed_aomori_shops():
             place_id='',
             plus_code='',
         ))
+        added += 1
     db.session.commit()
-    print(f"✅ 青森県の古着屋 {len(aomori_shops)} 件を追加しました")
+    print(f"✅ 青森県の古着屋 {added} 件を追加しました（スキップ: {len(aomori_shops) - added} 件）")
 
 
 def seed_data():
