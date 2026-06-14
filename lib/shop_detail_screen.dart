@@ -4,6 +4,7 @@ import 'furugiya_model.dart';
 import 'api_service.dart';
 import 'favorites_manager.dart';
 import 'visited_manager.dart';
+import 'shop_edit_screen.dart';
 
 class ShopDetailScreen extends StatefulWidget {
   final FurugiyaShop shop;
@@ -15,34 +16,29 @@ class ShopDetailScreen extends StatefulWidget {
 }
 
 class _ShopDetailScreenState extends State<ShopDetailScreen> {
-  late String _paymentMethods;
-  late String _hours;
-  late String _holiday;
-  late String _priceRange;
-  late String _parking;
+  late FurugiyaShop _shop;
   late double _rating;
   late int _reviewCount;
   bool _isFav = false;
   bool _hasVisited = false;
   List<ShopReview> _reviews = [];
   List<ShopNotice> _notices = [];
+  List<ShopMedia> _media = [];
   bool _reviewsLoading = true;
   bool _noticesLoading = true;
+  bool _mediaLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _paymentMethods = widget.shop.paymentMethods;
-    _hours = widget.shop.hours;
-    _holiday = widget.shop.holiday;
-    _priceRange = widget.shop.priceRange;
-    _parking = widget.shop.parking;
+    _shop = widget.shop;
     _rating = widget.shop.rating;
     _reviewCount = widget.shop.reviewCount;
     _loadFavStatus();
     _loadVisitedStatus();
     _loadReviews();
     _loadNotices();
+    _loadMedia();
   }
 
   Future<void> _loadVisitedStatus() async {
@@ -68,6 +64,15 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     }
   }
 
+  Future<void> _loadMedia() async {
+    try {
+      final media = await ApiService.getMedia(widget.shop.id);
+      if (mounted) setState(() { _media = media; _mediaLoading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _mediaLoading = false);
+    }
+  }
+
   Future<void> _loadFavStatus() async {
     final fav = await FavoritesManager.isFav(widget.shop.id);
     if (mounted) setState(() => _isFav = fav);
@@ -82,6 +87,34 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
         content: Text(_isFav ? 'お気に入りに追加しました' : 'お気に入りから外しました'),
         duration: const Duration(seconds: 1),
       ));
+    }
+  }
+
+  Future<void> _openEditScreen() async {
+    final result = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(builder: (_) => ShopEditScreen(shop: _shop)),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _shop = _shop.copyWith(
+          name:           result['name'] as String?,
+          address:        result['address'] as String?,
+          nearestStation: result['nearestStation'] as String?,
+          genres:         (result['genres'] as List<dynamic>?)?.cast<String>(),
+          hours:          result['hours'] as String?,
+          holiday:        result['holiday'] as String?,
+          description:    result['description'] as String?,
+          priceRange:     result['priceRange'] as String?,
+          paymentMethods: result['paymentMethods'] as String?,
+          parking:        result['parking'] as String?,
+          homepageUrl:    result['homepageUrl'] as String?,
+          snsUrl:         result['snsUrl'] as String?,
+          latitude:       result['latitude'] as double?,
+          longitude:      result['longitude'] as double?,
+        );
+      });
+      _showSnack(context, '保存しました');
     }
   }
 
@@ -111,10 +144,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
 
   Future<void> _openGoogleMaps(BuildContext context) async {
     String googleMapsUrl;
-    if (widget.shop.mapUrl.isNotEmpty) {
-      googleMapsUrl = widget.shop.mapUrl;
+    if (_shop.mapUrl.isNotEmpty) {
+      googleMapsUrl = _shop.mapUrl;
     } else {
-      final String encodedQuery = Uri.encodeComponent("${widget.shop.name} ${widget.shop.address}");
+      final String encodedQuery = Uri.encodeComponent("${_shop.name} ${_shop.address}");
       googleMapsUrl = "https://www.google.com/maps/search/?api=1&query=$encodedQuery";
     }
     await _launchUrl(context, googleMapsUrl);
@@ -141,107 +174,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
 
   void _showSnack(BuildContext context, String msg) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-  }
-
-  void _showEditDialog() {
-    final paymentCtrl = TextEditingController(text: _paymentMethods == '不明' ? '' : _paymentMethods);
-    final hoursCtrl = TextEditingController(text: _hours);
-    final holidayCtrl = TextEditingController(text: _holiday == 'なし' ? '' : _holiday);
-    final priceCtrl = TextEditingController(text: _priceRange == '不明' ? '' : _priceRange);
-    final parkingCtrl = TextEditingController(text: _parking);
-    final latCtrl = TextEditingController(text: widget.shop.latitude.toString());
-    final lngCtrl = TextEditingController(text: widget.shop.longitude.toString());
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('店舗情報を編集'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: paymentCtrl,
-                decoration: const InputDecoration(
-                  labelText: '支払い方法', hintText: '例: 現金、クレジットカード'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: hoursCtrl,
-                decoration: const InputDecoration(
-                  labelText: '営業時間', hintText: '例: 11:00〜20:00'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: holidayCtrl,
-                decoration: const InputDecoration(
-                  labelText: '定休日', hintText: '例: 月曜日'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: priceCtrl,
-                decoration: const InputDecoration(
-                  labelText: '平均価格帯', hintText: '例: ¥1,000〜¥5,000'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: parkingCtrl,
-                decoration: const InputDecoration(
-                  labelText: '駐車場', hintText: '例: あり・なし・3台'),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 4),
-              const Text('ピン位置の修正', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              const SizedBox(height: 8),
-              TextField(
-                controller: latCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                decoration: const InputDecoration(labelText: '緯度 (latitude)', hintText: '例: 35.6812'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: lngCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                decoration: const InputDecoration(labelText: '経度 (longitude)', hintText: '例: 139.7671'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              try {
-                final lat = double.tryParse(latCtrl.text.trim());
-                final lng = double.tryParse(lngCtrl.text.trim());
-                await ApiService.updateShop(widget.shop.id, {
-                  'paymentMethods': paymentCtrl.text.trim(),
-                  'hours': hoursCtrl.text.trim(),
-                  'holiday': holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim(),
-                  'priceRange': priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim(),
-                  'parking': parkingCtrl.text.trim(),
-                  if (lat != null) 'latitude': lat,
-                  if (lng != null) 'longitude': lng,
-                });
-                setState(() {
-                  _paymentMethods = paymentCtrl.text.trim().isEmpty ? '不明' : paymentCtrl.text.trim();
-                  _hours = hoursCtrl.text.trim();
-                  _holiday = holidayCtrl.text.trim().isEmpty ? 'なし' : holidayCtrl.text.trim();
-                  _priceRange = priceCtrl.text.trim().isEmpty ? '不明' : priceCtrl.text.trim();
-                  _parking = parkingCtrl.text.trim();
-                });
-                if (mounted) _showSnack(context, '保存しました');
-              } catch (e) {
-                if (mounted) _showSnack(context, '保存に失敗しました: $e');
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showReviewDialog() {
@@ -318,9 +250,177 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     );
   }
 
+  Widget _buildMediaCard(ShopMedia m) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: m.url.isNotEmpty ? () => _launchUrl(context, m.url) : null,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.indigo.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.indigo.shade100),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.indigo.shade700,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      m.source.isNotEmpty ? m.source : 'メディア',
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (m.date.isNotEmpty)
+                    Text(m.date, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                  if (m.url.isNotEmpty) ...[
+                    const SizedBox(width: 4),
+                    Icon(Icons.open_in_new, size: 14, color: Colors.indigo.shade400),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                m.title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: m.url.isNotEmpty ? Colors.indigo.shade800 : Colors.black87,
+                  decoration: m.url.isNotEmpty ? TextDecoration.underline : null,
+                ),
+              ),
+              if (m.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(m.description,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddMediaDialog() {
+    final titleCtrl  = TextEditingController();
+    final sourceCtrl = TextEditingController();
+    final urlCtrl    = TextEditingController();
+    final descCtrl   = TextEditingController();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(Icons.newspaper_outlined, color: Colors.indigo[600], size: 20),
+              const SizedBox(width: 8),
+              const Text('メディア掲載を追加'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: sourceCtrl,
+                  decoration: const InputDecoration(
+                    labelText: '掲載メディア名 *',
+                    hintText: '例: WWD JAPAN、VOGUE JAPAN',
+                    prefixIcon: Icon(Icons.business),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(
+                    labelText: '記事タイトル *',
+                    hintText: '例: 注目の古着屋10選',
+                    prefixIcon: Icon(Icons.title),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: urlCtrl,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: '記事URL',
+                    hintText: 'https://...',
+                    prefixIcon: Icon(Icons.link),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: '概要（任意）',
+                    hintText: '記事の簡単な説明',
+                    prefixIcon: Icon(Icons.notes),
+                    alignLabelWithHint: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('キャンセル')),
+            ElevatedButton(
+              onPressed: isSaving
+                  ? null
+                  : () async {
+                      if (titleCtrl.text.trim().isEmpty || sourceCtrl.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('メディア名と記事タイトルは必須です')),
+                        );
+                        return;
+                      }
+                      setDialogState(() => isSaving = true);
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await ApiService.addMedia(widget.shop.id, {
+                          'title':       titleCtrl.text.trim(),
+                          'source':      sourceCtrl.text.trim(),
+                          'url':         urlCtrl.text.trim(),
+                          'description': descCtrl.text.trim(),
+                        });
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        await _loadMedia();
+                        messenger.showSnackBar(
+                          const SnackBar(content: Text('メディア掲載を追加しました')),
+                        );
+                      } catch (e) {
+                        if (ctx.mounted) setDialogState(() => isSaving = false);
+                        messenger.showSnackBar(
+                          SnackBar(content: Text('追加に失敗しました: $e')),
+                        );
+                      }
+                    },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo),
+              child: isSaving
+                  ? const SizedBox(width: 16, height: 16,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('追加', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final genre = widget.shop.genres.isNotEmpty ? widget.shop.genres.first : '';
+    final genre = _shop.genres.isNotEmpty ? _shop.genres.first : '';
     final color = _genreColor(genre);
 
     return Scaffold(
@@ -329,7 +429,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black87,
-        title: Text(widget.shop.name,
+        title: Text(_shop.name,
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17)),
         actions: [
           IconButton(
@@ -343,7 +443,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
           IconButton(
             icon: Icon(Icons.edit, color: Colors.grey[600]),
             tooltip: '情報を編集',
-            onPressed: _showEditDialog,
+            onPressed: _openEditScreen,
           ),
         ],
       ),
@@ -382,8 +482,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 店名
-                  Text(widget.shop.name,
+                  Text(_shop.name,
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
 
@@ -413,7 +512,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   // アクションボタン行
                   Row(
                     children: [
-                      // 行った！ボタン
                       Expanded(
                         child: GestureDetector(
                           onTap: () async {
@@ -459,7 +557,6 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      // ここに行くボタン
                       Expanded(
                         flex: 2,
                         child: ElevatedButton.icon(
@@ -493,26 +590,26 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                   const Text('店舗情報',
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
-                  _buildInfoRow(Icons.currency_yen, '平均価格帯', _priceRange),
-                  _buildInfoRow(Icons.access_time, '営業時間', _hours),
-                  _buildInfoRow(Icons.event_note, '定休日', _holiday),
-                  _buildInfoRow(Icons.local_parking, '駐車場', _formatParking(_parking)),
-                  _buildInfoRow(Icons.train, '最寄り駅', widget.shop.nearestStation),
-                  _buildInfoRow(Icons.payments_outlined, '支払い方法', _paymentMethods),
+                  _buildInfoRow(Icons.currency_yen, '平均価格帯', _shop.priceRange),
+                  _buildInfoRow(Icons.access_time, '営業時間', _shop.hours),
+                  _buildInfoRow(Icons.event_note, '定休日', _shop.holiday),
+                  _buildInfoRow(Icons.local_parking, '駐車場', _formatParking(_shop.parking)),
+                  _buildInfoRow(Icons.train, '最寄り駅', _shop.nearestStation),
+                  _buildInfoRow(Icons.payments_outlined, '支払い方法', _shop.paymentMethods),
                   InkWell(
                     onTap: () => _openGoogleMaps(context),
-                    child: _buildInfoRow(Icons.location_on, '住所', widget.shop.address, isLink: true),
+                    child: _buildInfoRow(Icons.location_on, '住所', _shop.address, isLink: true),
                   ),
-                  if (widget.shop.homepageUrl.isNotEmpty)
-                    _buildLinkRow(context, Icons.language, 'Webサイト', widget.shop.homepageUrl),
-                  if (widget.shop.snsUrl.isNotEmpty)
-                    _buildLinkRow(context, Icons.link, 'SNS / Instagram', widget.shop.snsUrl),
+                  if (_shop.homepageUrl.isNotEmpty)
+                    _buildLinkRow(context, Icons.language, 'Webサイト', _shop.homepageUrl),
+                  if (_shop.snsUrl.isNotEmpty)
+                    _buildLinkRow(context, Icons.camera_alt_outlined, 'SNS / Instagram', _shop.snsUrl),
                 ],
               ),
             ),
 
             // お店の説明があれば表示
-            if (widget.shop.description.isNotEmpty) ...[
+            if (_shop.description.isNotEmpty) ...[
               const SizedBox(height: 8),
               Container(
                 color: Colors.white,
@@ -523,7 +620,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                     const Text('お店について',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    Text(widget.shop.description,
+                    Text(_shop.description,
                         style: TextStyle(fontSize: 14, color: Colors.grey[800], height: 1.6)),
                   ],
                 ),
@@ -572,6 +669,45 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
                         ],
                       ),
                     )),
+                ],
+              ),
+            ),
+
+            // メディア掲載セクション
+            const SizedBox(height: 8),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.newspaper_outlined, size: 18, color: Colors.indigo[600]),
+                          const SizedBox(width: 6),
+                          const Text('メディア掲載',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      TextButton.icon(
+                        onPressed: _showAddMediaDialog,
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('追加', style: TextStyle(fontSize: 13)),
+                        style: TextButton.styleFrom(foregroundColor: Colors.indigo),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if (_mediaLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else if (_media.isEmpty)
+                    Text('掲載情報はまだありません',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]))
+                  else
+                    ..._media.map((m) => _buildMediaCard(m)),
                 ],
               ),
             ),

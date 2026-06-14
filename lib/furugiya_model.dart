@@ -56,7 +56,7 @@ class FurugiyaShop {
       nearestStation: json['nearestStation'] ?? '',
       latitude: (json['latitude'] ?? 0.0).toDouble(),
       longitude: (json['longitude'] ?? 0.0).toDouble(),
-      plusCode: json['plusCode'] ?? '', // ★追加：JSONのキー名はキャメルケースを想定
+      plusCode: json['plusCode'] ?? '',
       homepageUrl: json['homepageUrl'] ?? '',
       snsUrl: json['snsUrl'] ?? '',
       hours: json['hours'] ?? '',
@@ -68,6 +68,54 @@ class FurugiyaShop {
       paymentMethods: json['paymentMethods'] ?? '不明',
       imageUrls: (json['imageUrls'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       parking: json['parking'] ?? '',
+    );
+  }
+
+  FurugiyaShop copyWith({
+    int? id,
+    String? name,
+    List<String>? genres,
+    double? rating,
+    int? reviewCount,
+    String? address,
+    String? nearestStation,
+    double? latitude,
+    double? longitude,
+    String? plusCode,
+    String? homepageUrl,
+    String? snsUrl,
+    String? hours,
+    String? holiday,
+    String? description,
+    String? priceRange,
+    String? placeId,
+    String? mapUrl,
+    String? paymentMethods,
+    List<String>? imageUrls,
+    String? parking,
+  }) {
+    return FurugiyaShop(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      genres: genres ?? this.genres,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      address: address ?? this.address,
+      nearestStation: nearestStation ?? this.nearestStation,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      plusCode: plusCode ?? this.plusCode,
+      homepageUrl: homepageUrl ?? this.homepageUrl,
+      snsUrl: snsUrl ?? this.snsUrl,
+      hours: hours ?? this.hours,
+      holiday: holiday ?? this.holiday,
+      description: description ?? this.description,
+      priceRange: priceRange ?? this.priceRange,
+      placeId: placeId ?? this.placeId,
+      mapUrl: mapUrl ?? this.mapUrl,
+      paymentMethods: paymentMethods ?? this.paymentMethods,
+      imageUrls: imageUrls ?? this.imageUrls,
+      parking: parking ?? this.parking,
     );
   }
 }
@@ -117,6 +165,35 @@ class ShopNotice {
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       date: json['date'] ?? '',
+    );
+  }
+}
+
+class ShopMedia {
+  final int id;
+  final String title;
+  final String source;
+  final String url;
+  final String date;
+  final String description;
+
+  ShopMedia({
+    required this.id,
+    required this.title,
+    required this.source,
+    required this.url,
+    required this.date,
+    required this.description,
+  });
+
+  factory ShopMedia.fromJson(Map<String, dynamic> json) {
+    return ShopMedia(
+      id:          json['id'] ?? 0,
+      title:       json['title'] ?? '',
+      source:      json['source'] ?? '',
+      url:         json['url'] ?? '',
+      date:        json['date'] ?? '',
+      description: json['description'] ?? '',
     );
   }
 }

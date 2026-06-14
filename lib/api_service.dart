@@ -133,4 +133,27 @@ class ApiService {
       throw Exception('お知らせの読み込みに失敗しました');
     }
   }
+
+  // メディア掲載一覧取得
+  static Future<List<ShopMedia>> getMedia(int shopId) async {
+    final response = await http.get(Uri.parse('$baseUrl/shops/$shopId/media'));
+    if (response.statusCode == 200) {
+      final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body.map((item) => ShopMedia.fromJson(item)).toList();
+    } else {
+      throw Exception('メディア情報の読み込みに失敗しました');
+    }
+  }
+
+  // メディア掲載追加
+  static Future<void> addMedia(int shopId, Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/shops/$shopId/media'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode(data),
+    );
+    if (response.statusCode != 201) {
+      throw Exception('メディア情報の追加に失敗しました');
+    }
+  }
 }
