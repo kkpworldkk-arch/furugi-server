@@ -370,6 +370,17 @@ def admin_import_csv():
     db.session.commit()
     return jsonify({"message": f"{imported}件インポートしました"}), 200
 
+@app.route('/api/admin/seed_akita', methods=['POST'])
+def admin_seed_akita():
+    data = request.json or {}
+    admin = Admin.query.first()
+    if not admin or admin.password != data.get('password'):
+        return jsonify({"error": "NG"}), 401
+    with app.app_context():
+        seed_akita_shops()
+    count = Shop.query.filter(Shop.address.like('%秋田%')).count()
+    return jsonify({"message": "完了", "akita_count": count}), 200
+
 @app.route('/api/admin/seed_aomori', methods=['POST'])
 def admin_seed_aomori():
     data = request.json or {}
@@ -751,6 +762,211 @@ def seed_aomori_shops():
     print(f"✅ 青森県の古着屋 {added} 件を追加しました（スキップ: {len(aomori_shops) - added} 件）")
 
 
+def seed_akita_shops():
+    """秋田県の古着屋データを追加（各店舗ごとに重複チェック）"""
+    akita_shops = [
+        # ── 秋田市 ────────────────────────────────────────────
+        {
+            'name': '古着屋Alright（オールライト）',
+            'address': '秋田県秋田市中通2-8-1 フォンテAKITA 2F',
+            'nearest_station': '秋田駅',
+            'genres': 'US古着,ヴィンテージ,アメカジ,レディース',
+            'hours': '10:00〜20:00',
+            'holiday': '不定休（フォンテAKITAに準ずる）',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/alright_worldwide_recycle/',
+            'description': '秋田駅西口から徒歩約2分、フォンテAKITA2階。80s〜90s USA製スウェット・ナイロンジャケット・リーバイスなど、コスパに優れたレギュラーヴィンテージが中心。価格帯3,000〜8,000円。',
+            'latitude': 39.7188, 'longitude': 140.1028,
+        },
+        {
+            'name': 'BUP 秋田OPA店',
+            'address': '秋田県秋田市千秋久保田町4-2 秋田OPA 5F',
+            'nearest_station': '秋田駅',
+            'genres': 'US古着,ヴィンテージ',
+            'hours': '10:00〜20:00',
+            'holiday': '不定休（OPAに準ずる）',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/bup_japan_akita/',
+            'description': '秋田OPA5階に入る古着専門店。アメリカ古着を低価格で展開。アクセサリーやアートアイテムも取り扱う。秋田駅西口から徒歩約3分。',
+            'latitude': 39.7199, 'longitude': 140.1021,
+        },
+        {
+            'name': 'DINER018 秋田駅前本店',
+            'address': '秋田県秋田市大町2丁目4-23',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,アメカジ,US古着',
+            'hours': '平日14:00〜20:00 / 土日祝13:00〜19:00',
+            'holiday': '不定休（Instagramで告知）',
+            'homepage_url': 'https://diner018.thebase.in/',
+            'sns_url': 'https://www.instagram.com/diner018.akita/',
+            'description': 'アメリカから直接買い付けたリアルなヴィンテージアイテムをキュレーションするアメカジ専門店。オンラインショップも運営。',
+            'latitude': 39.7168, 'longitude': 140.0987,
+        },
+        {
+            'name': 'BOROS',
+            'address': '秋田県秋田市中通3丁目4-5',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,US古着,レディース',
+            'hours': '平日14:00〜19:00 / 土日祝13:00〜20:00',
+            'holiday': '不定休（Instagramで告知）',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/boros_vintage/',
+            'description': '秋田市中通に位置する個性派ビンテージショップ。アメリカ・ヨーロッパのビンテージを中心に、メンズ・レディース問わず幅広く取り揃える。',
+            'latitude': 39.7178, 'longitude': 140.1002,
+        },
+        {
+            'name': 'FANCYWALK',
+            'address': '秋田県秋田市中通5-5-31 芙水ビル1F',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,アメカジ,レディース',
+            'hours': '13:00〜19:00',
+            'holiday': '不定休',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/fancywalk57/',
+            'description': '1940年代〜80年代を中心としたヴィンテージ古着を専門に扱う、秋田有数の本格派ショップ。アンティーク雑貨も併せて展開。',
+            'latitude': 39.7155, 'longitude': 140.1010,
+        },
+        {
+            'name': '古着屋アンディ&キャロライン',
+            'address': '秋田県秋田市中通6丁目14-11',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,レディース',
+            'hours': '不定期営業（Instagramで確認）',
+            'holiday': '不定休',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/andy00caroline/',
+            'description': 'オーナー自ら手を加えた世界にひとつだけのリメイクピースを展開するユニーク古着店。',
+            'latitude': 39.7142, 'longitude': 140.1015,
+        },
+        {
+            'name': 'GB Vintage shop',
+            'address': '秋田県秋田市保戸野中町1-2',
+            'nearest_station': '秋田駅',
+            'genres': 'US古着,ストリート,アメカジ,アウトドア,レディース',
+            'hours': '13:00〜19:00',
+            'holiday': '不定休',
+            'homepage_url': 'https://gbvintage.base.shop/',
+            'sns_url': 'https://www.instagram.com/gb_vintage_shop/',
+            'description': '海外輸入古着を中心にストリート・アメカジ・アウトドアなど幅広いジャンルを男女問わず展開。美容室が併設されたユニークな複合スペース。',
+            'latitude': 39.7225, 'longitude': 140.1098,
+        },
+        {
+            'name': 'SINUS.',
+            'address': '秋田県秋田市東通仲町9-5',
+            'nearest_station': '秋田駅',
+            'genres': 'US古着,ヴィンテージ,レディース',
+            'hours': '12:00〜19:00',
+            'holiday': '不定休',
+            'homepage_url': 'https://sinus60.thebase.in/',
+            'sns_url': 'https://www.instagram.com/sinus.used/',
+            'description': '秋田駅東口近くにある古着屋。アメリカ・ヨーロッパの個性豊かなデザインの古着を中心に取り揃え。素材の質感や着心地を重視した買い付けが特徴。',
+            'latitude': 39.7192, 'longitude': 140.1075,
+        },
+        {
+            'name': 'いいべ',
+            'address': '秋田県秋田市中通3-3-1',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,US古着,レディース',
+            'hours': '10:30〜18:00（火・水は〜17:00）',
+            'holiday': '月曜（祝日の場合は翌日休）',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/iibe__akita/',
+            'description': '都内セレクトショップ勤務経験を持つ夫婦が秋田に移住して開業。秋田の四季に合わせた古着を3,000円台〜でセレクト。店内に郷土玩具など秋田の特産品も並ぶ。',
+            'latitude': 39.7175, 'longitude': 140.1003,
+        },
+        {
+            'name': 'Gallant-doo',
+            'address': '秋田県秋田市広面字昼寝46-4',
+            'nearest_station': '秋田駅',
+            'genres': 'ヴィンテージ,ミリタリー,US古着',
+            'hours': '月・金 15:00〜19:00 / 土・日 10:00〜19:00',
+            'holiday': '火・水・木曜日',
+            'homepage_url': 'https://gallant-doo.com/',
+            'sns_url': '',
+            'description': '欧米から直接仕入れたデイリーウエア・ミリタリー・ヴィンテージ・アンティークを1,000点以上取り揃えるセレクト店。ヴィンテージ腕時計・ジュエリー・雑貨も展開。',
+            'latitude': 39.7130, 'longitude': 140.1162,
+        },
+        {
+            'name': 'REAL MOON 秋田店',
+            'address': '秋田県秋田市東通5-8-25',
+            'nearest_station': '秋田駅',
+            'genres': 'アメカジ,ヴィンテージ,US古着',
+            'hours': '11:00〜19:00',
+            'holiday': '毎週火曜・水曜',
+            'homepage_url': 'https://www.realmoon.co.jp/',
+            'sns_url': 'https://www.instagram.com/realmoon_store/',
+            'description': '1996年創業のアメカジ専門店。アメリカのクラフツマンブランドとジャパニーズブランドを中心にセレクト。湯沢に本店あり。',
+            'latitude': 39.7215, 'longitude': 140.1082,
+        },
+        # ── 大仙市 ────────────────────────────────────────────
+        {
+            'name': 'sit in',
+            'address': '秋田県大仙市大曲通町2-31',
+            'nearest_station': '大曲駅',
+            'genres': 'ヴィンテージ,US古着,レディース',
+            'hours': '11:00〜18:00',
+            'holiday': '水曜日',
+            'homepage_url': 'https://akita-sitin.shopinfo.jp/',
+            'sns_url': 'https://www.instagram.com/sitinclothing/',
+            'description': '大仙市大曲の古着専門店。大曲駅から徒歩圏内に位置し、通販にも対応。',
+            'latitude': 39.4817, 'longitude': 140.4782,
+        },
+        # ── 湯沢市 ────────────────────────────────────────────
+        {
+            'name': 'made in TIGER',
+            'address': '秋田県湯沢市大町1-1-1 大友ビル1F',
+            'nearest_station': '湯沢駅',
+            'genres': 'US古着,アメカジ,レディース',
+            'hours': '12:00〜20:00',
+            'holiday': '不定休',
+            'homepage_url': '',
+            'sns_url': '',
+            'description': '湯沢市出身の店主が地元で開業。関東から買い付けたアウター・スウェット・シャツを中心に、リーズナブルな価格帯でラインアップ。',
+            'latitude': 39.1645, 'longitude': 140.4952,
+        },
+        {
+            'name': 'REAL MOON 湯沢店',
+            'address': '秋田県湯沢市元清水2-5-8',
+            'nearest_station': '湯沢駅',
+            'genres': 'アメカジ,ヴィンテージ,US古着',
+            'hours': '11:00〜19:00',
+            'holiday': '毎週木曜・金曜',
+            'homepage_url': 'https://www.realmoon.co.jp/',
+            'sns_url': 'https://www.instagram.com/realmoon_store/',
+            'description': '1996年創業のREAL MOON本店。アメリカン・ゴールデンエイジのヴィンテージからインスパイアされた商品とアメカジブランド正規品を販売。',
+            'latitude': 39.1638, 'longitude': 140.4928,
+        },
+    ]
+
+    added = 0
+    for d in akita_shops:
+        if Shop.query.filter_by(name=d['name']).first():
+            continue
+        db.session.add(Shop(
+            name=d['name'],
+            address=d.get('address', ''),
+            nearest_station=d.get('nearest_station', ''),
+            genres=d.get('genres', ''),
+            hours=d.get('hours', ''),
+            holiday=d.get('holiday', 'なし'),
+            homepage_url=d.get('homepage_url', ''),
+            sns_url=d.get('sns_url', ''),
+            description=d.get('description', ''),
+            price_range=d.get('price_range', '不明'),
+            payment_methods=d.get('payment_methods', '不明'),
+            parking=d.get('parking', ''),
+            latitude=d['latitude'],
+            longitude=d['longitude'],
+            rating=0.0,
+            review_count=0,
+            place_id='',
+            plus_code='',
+        ))
+        added += 1
+    db.session.commit()
+    print(f"✅ 秋田県の古着屋 {added} 件を追加しました（スキップ: {len(akita_shops) - added} 件）")
+
+
 def seed_data():
     db.create_all()
     migrate_db()
@@ -789,6 +1005,7 @@ def seed_data():
         print("✅ 管理者パスワード設定完了（admin）")
 
     seed_aomori_shops()
+    seed_akita_shops()
 
 # gunicorn・直接実行どちらでも起動時にDB初期化
 with app.app_context():

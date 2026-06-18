@@ -43,6 +43,7 @@ class _MapScreenState extends State<MapScreen> {
 
   // --- 新規ショップ追加モード ---
   bool _isAddingShop = false;
+  bool _stripExpanded = false;
   LatLng? _newShopPinPosition;
   Map<String, dynamic>? _pendingShopData;
   LatLng _currentMapCenter = const LatLng(35.6611, 139.6685);
@@ -429,8 +430,11 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   // ================================================
-  //  デスクトップ：下部横スクロールストリップ
+  //  デスクトップ：下部パネル（クリックで展開・縦スクロール）
   // ================================================
+  static const double _headerHeight  = 48.0;
+  static const double _listHeight    = 340.0;
+
   Widget _buildDesktopBottomStrip() {
     return Positioned(
       left: 0,
@@ -447,40 +451,55 @@ class _MapScreenState extends State<MapScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ヘッダー
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-                child: Row(
-                  children: [
-                    const Icon(Icons.storefront, size: 15,
-                        color: Color(0xFF5D4037)),
-                    const SizedBox(width: 6),
-                    Text(
-                      'このエリア ${_visibleShops.length}件',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Color(0xFF5D4037),
-                      ),
-                    ),
-                  ],
+              // 展開時: 縦スクロールリスト
+              if (_stripExpanded)
+                SizedBox(
+                  height: _listHeight,
+                  child: _visibleShops.isEmpty
+                      ? const Center(
+                          child: Text('このエリアに店舗はありません',
+                              style: TextStyle(fontSize: 13, color: Colors.grey)))
+                      : Scrollbar(
+                          thumbVisibility: true,
+                          child: ListView.builder(
+                            itemCount: _visibleShops.length,
+                            itemBuilder: (context, index) =>
+                                _buildMobileListTile(_visibleShops[index]),
+                          ),
+                        ),
                 ),
-              ),
-              // 横スクロールカード
-              SizedBox(
-                height: 115,
-                child: _visibleShops.isEmpty
-                  ? const Center(
-                      child: Text('このエリアに店舗はありません',
-                          style: TextStyle(fontSize: 13, color: Colors.grey)),
-                    )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      itemCount: _visibleShops.length,
-                      itemBuilder: (context, index) =>
-                          _buildDesktopCard(_visibleShops[index]),
+              if (_stripExpanded) const Divider(height: 1),
+              // ヘッダー（常に表示・タップで展開/折りたたみ）
+              InkWell(
+                onTap: () => setState(() => _stripExpanded = !_stripExpanded),
+                child: SizedBox(
+                  height: _headerHeight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.storefront, size: 15, color: Color(0xFF5D4037)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'このエリア ${_visibleShops.length}件',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: Color(0xFF5D4037),
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          _stripExpanded
+                              ? Icons.keyboard_arrow_down
+                              : Icons.keyboard_arrow_up,
+                          size: 20,
+                          color: Colors.grey[500],
+                        ),
+                      ],
                     ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -489,81 +508,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildDesktopCard(FurugiyaShop shop) {
-    final genre = shop.genres.isNotEmpty ? shop.genres.first : '';
-    final color = _genreColor(genre);
-    return GestureDetector(
-      onTap: () => _showShopInfo(shop),
-      child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 10, top: 2),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 4,
-                offset: const Offset(0, 2)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.storefront, size: 14, color: color),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(shop.name,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            if (genre.isNotEmpty)
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(genre,
-                    style: TextStyle(
-                        fontSize: 10,
-                        color: color,
-                        fontWeight: FontWeight.w600)),
-              ),
-            const Spacer(),
-            Row(
-              children: [
-                if (shop.nearestStation.isNotEmpty) ...[
-                  Icon(Icons.train, size: 11, color: Colors.grey[400]),
-                  const SizedBox(width: 2),
-                  Expanded(
-                    child: Text(shop.nearestStation,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                      overflow: TextOverflow.ellipsis),
-                  ),
-                ] else
-                  const Spacer(),
-                if (shop.rating > 0) ...[
-                  const Icon(Icons.star, size: 11, color: Colors.orange),
-                  Text(shop.rating.toStringAsFixed(1),
-                    style: const TextStyle(fontSize: 10)),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ================================================
   //  モバイル：下から引き出せるボトムシート
@@ -759,8 +703,10 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     final bool inEditMode = _adjustingShop != null || _isAddingShop;
     final bool isDesktop = _isDesktop;
-    // デスクトップ: ストリップ分だけFABを上に逃がす
-    final double fabBottomPadding = isDesktop ? 152.0 : 16.0;
+    // デスクトップ: パネル分だけFABを上に逃がす（展開時はリスト高さ分も加算）
+    final double fabBottomPadding = isDesktop
+        ? (_stripExpanded ? _headerHeight + _listHeight + 16.0 : _headerHeight + 16.0)
+        : 16.0;
 
     return Scaffold(
       body: Stack(
