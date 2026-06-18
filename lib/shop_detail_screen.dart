@@ -250,6 +250,41 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
     );
   }
 
+  Future<void> _confirmDelete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('店舗を削除しますか？'),
+        content: Text(
+          '「${_shop.name}」を削除します。\nこの操作は取り消せません。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('削除する', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ApiService.deleteShop(_shop.id);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('「${_shop.name}」を削除しました')),
+        );
+      }
+    } catch (e) {
+      if (mounted) _showSnack(context, '削除に失敗しました: $e');
+    }
+  }
+
   Widget _buildMediaCard(ShopMedia m) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -444,6 +479,11 @@ class _ShopDetailScreenState extends State<ShopDetailScreen> {
             icon: Icon(Icons.edit, color: Colors.grey[600]),
             tooltip: '情報を編集',
             onPressed: _openEditScreen,
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: Colors.red[400]),
+            tooltip: '店舗を削除',
+            onPressed: _confirmDelete,
           ),
         ],
       ),

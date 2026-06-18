@@ -36,6 +36,16 @@ class ApiService {
 
   // --- 以降、既存のメソッドはそのまま保持 ---
 
+  // 店舗削除
+  static Future<void> deleteShop(int shopId) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/shops/$shopId'),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('削除に失敗しました');
+    }
+  }
+
   // 店舗情報更新
   static Future<void> updateShop(int shopId, Map<String, dynamic> data) async {
     final response = await http.patch(

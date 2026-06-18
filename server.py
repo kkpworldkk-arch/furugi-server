@@ -12,7 +12,7 @@ app.config['JSON_AS_ASCII'] = False
 CORS(app, resources={r"/*": {
     "origins": "*", 
     "allow_headers": ["Content-Type", "ngrok-skip-browser-warning", "Authorization"],
-    "methods": ["GET", "POST", "PATCH", "OPTIONS"]
+    "methods": ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
 }})
 
 # データベース設定（Railway PostgreSQL or ローカルSQLite）
@@ -178,6 +178,16 @@ def add_shop():
     db.session.add(new_shop)
     db.session.commit()
     return jsonify({"message": "Shop added"}), 201
+
+@app.route('/api/shops/<int:shop_id>', methods=['DELETE'])
+def delete_shop(shop_id):
+    shop = Shop.query.get_or_404(shop_id)
+    Review.query.filter_by(shop_id=shop_id).delete()
+    Notice.query.filter_by(shop_id=shop_id).delete()
+    ShopMedia.query.filter_by(shop_id=shop_id).delete()
+    db.session.delete(shop)
+    db.session.commit()
+    return jsonify({"message": "Deleted"}), 200
 
 @app.route('/api/shops/<int:shop_id>', methods=['PATCH'])
 def update_shop(shop_id):
@@ -380,6 +390,16 @@ def admin_seed_akita():
         seed_akita_shops()
     count = Shop.query.filter(Shop.address.like('%秋田%')).count()
     return jsonify({"message": "完了", "akita_count": count}), 200
+
+@app.route('/api/admin/seed_iwate', methods=['POST'])
+def admin_seed_iwate():
+    data = request.json or {}
+    admin = Admin.query.first()
+    if not admin or admin.password != data.get('password'):
+        return jsonify({"error": "NG"}), 401
+    seed_iwate_shops()
+    count = Shop.query.filter(Shop.address.like('%岩手%')).count()
+    return jsonify({"message": "完了", "iwate_count": count}), 200
 
 @app.route('/api/admin/seed_aomori', methods=['POST'])
 def admin_seed_aomori():
@@ -967,6 +987,187 @@ def seed_akita_shops():
     print(f"✅ 秋田県の古着屋 {added} 件を追加しました（スキップ: {len(akita_shops) - added} 件）")
 
 
+def seed_iwate_shops():
+    """岩手県の古着屋データを追加（各店舗ごとに重複チェック）"""
+    iwate_shops = [
+        # ── 盛岡市 ────────────────────────────────────────────
+        {
+            'name': 'Brownstone',
+            'address': '岩手県盛岡市開運橋通り1-2 アイビルK1F',
+            'nearest_station': '盛岡駅',
+            'genres': 'ヴィンテージ,アメカジ,US古着',
+            'hours': '月〜土 11:00〜20:00 / 日 11:00〜19:00',
+            'holiday': '年末年始',
+            'homepage_url': 'http://brs.brownstone.jp/',
+            'sns_url': 'https://www.instagram.com/morioka_brownstone/',
+            'description': '海外から直接買い付けた幅広いラインナップの古着屋。「いい洋服屋を目指している」をコンセプトに、90年代ファッションやレトロアイテムを中心にセレクト。盛岡を代表するヴィンテージショップ。',
+            'latitude': 39.7034, 'longitude': 141.1380,
+        },
+        {
+            'name': 'LOVELOCK',
+            'address': '岩手県盛岡市開運橋通1-40',
+            'nearest_station': '盛岡駅',
+            'genres': 'ヴィンテージ,US古着,レディース',
+            'hours': '月〜土 11:00〜20:00 / 日 11:00〜19:00',
+            'holiday': '年末年始',
+            'homepage_url': 'https://lvl.brownstone.jp/',
+            'sns_url': 'https://www.instagram.com/lovelock_morioka/',
+            'description': 'Brownstoneの姉妹店。アメリカから直接買い付けたUsed&Vintageを中心に、アジアンテイストの海外ヴィンテージも取り扱うレディース中心のショップ。',
+            'latitude': 39.7036, 'longitude': 141.1378,
+        },
+        {
+            'name': 'cheapchic',
+            'address': '岩手県盛岡市中央通1丁目12-1',
+            'nearest_station': '盛岡駅',
+            'genres': 'ヴィンテージ,US古着,レディース',
+            'hours': '11:00〜19:00',
+            'holiday': '不定休',
+            'homepage_url': 'https://www.cheapchic-japan.com/',
+            'sns_url': 'https://www.instagram.com/cheapchic_used/',
+            'description': 'アメリカ・ヨーロッパから直接買い付けたヴィンテージが並ぶ。70年代ヴィンテージを中心に衣類・靴・アンティーク雑貨まで揃い、パリの蚤の市のような空間が魅力。',
+            'latitude': 39.7066, 'longitude': 141.1430,
+        },
+        {
+            'name': 'gee,jee 盛岡',
+            'address': '岩手県盛岡市大通1-4-10 照井ビル2F',
+            'nearest_station': '上盛岡駅',
+            'genres': 'ブランド古着,アメカジ,レディース',
+            'hours': '平日 11:00〜19:30 / 日・祝 11:00〜19:00',
+            'holiday': '木曜日',
+            'homepage_url': 'https://happypoint.jp/geejee/',
+            'sns_url': 'https://www.instagram.com/geejee_morioka/',
+            'description': '東北最大級のブランド古着専門店。DCブランド・アメカジブランド・国内ブランドの衣類・小物・アクセサリー・靴を幅広く取り扱う。高価買取・宅配買取にも対応。',
+            'latitude': 39.7057, 'longitude': 141.1415,
+        },
+        {
+            'name': 'レトロブティックことり',
+            'address': '岩手県盛岡市城西町13-15',
+            'nearest_station': '盛岡駅',
+            'genres': 'ヴィンテージ,レディース,その他',
+            'hours': '日〜金 12:00〜19:00 / 土 12:00〜20:00',
+            'holiday': '火曜日',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/cobicobi1129/',
+            'description': '「真剣にふざける」をモットーとした個性派古着屋。海外レトロアイテムから和柄ファッションまで取り扱い、オリジナルリメイクブランド「COBICOBI」・昭和レトロ雑貨も販売。',
+            'latitude': 39.7042, 'longitude': 141.1328,
+        },
+        {
+            'name': 'one and only',
+            'address': '岩手県盛岡市本宮3丁目10-11',
+            'nearest_station': '盛岡駅',
+            'genres': 'ヴィンテージ,US古着,アメカジ,ストリート',
+            'hours': '月・木〜日 12:00〜20:00',
+            'holiday': '火曜日・水曜日',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/one_and_only_2007/',
+            'description': '盛岡のヴィンテージ・アメカジ系古着の人気店。アメリカンヴィンテージを中心に幅広いジャンルを取り扱う。駐車場完備。',
+            'latitude': 39.7100, 'longitude': 141.1290,
+        },
+        {
+            'name': 'JIKAI',
+            'address': '岩手県盛岡市長田町2-24 シャトルながまち1F',
+            'nearest_station': '盛岡駅',
+            'genres': 'ストリート,ブランド古着,レディース',
+            'hours': '12:00〜19:00',
+            'holiday': '不定休',
+            'homepage_url': 'https://jikaionline.com/',
+            'sns_url': 'https://www.instagram.com/jikai_morioka/',
+            'description': '古着×デザイナーズブランドのハイブリッドセレクトショップ。SUGARHILL・NVRFRGTなど国内外の注目ブランドを20社以上取り扱う盛岡発のセレクトショップ。',
+            'latitude': 39.7115, 'longitude': 141.1240,
+        },
+        {
+            'name': 'Jeans Shop 3rd Down',
+            'address': '岩手県盛岡市三本柳5地割31-1 セブンハイツ103',
+            'nearest_station': '岩手飯岡駅',
+            'genres': 'ヴィンテージ,アメカジ,ミリタリー,ワーク',
+            'hours': '12:00〜19:00',
+            'holiday': '木曜日',
+            'homepage_url': 'https://jeans3rddown.base.shop/',
+            'sns_url': 'https://www.instagram.com/jeans_shop_3rd_down/',
+            'description': '日本製ジーンズ専門。SUGAR CANE・BUZZ RICKSON\'Sなどアメリカンヴィンテージレプリカブランドを中心にセレクト。チェーンステッチミシンによる裾上げサービスも実施。',
+            'latitude': 39.7180, 'longitude': 141.1550,
+        },
+        {
+            'name': 'NORA antiques',
+            'address': '岩手県盛岡市鉈屋町2-19',
+            'nearest_station': '仙北町駅',
+            'genres': 'ヴィンテージ,レディース,その他',
+            'hours': '不定期（Instagram参照）',
+            'holiday': '不定休',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/nora1985cat/',
+            'description': '古布（ボロ）を使ったリメイクアイテムとフランスヴィンテージ古着を専門とするアトリエ兼ショップ。古い布に新たな命を吹き込むリメイク作品が人気。盛岡の歴史ある鉈屋町エリアに位置する。',
+            'latitude': 39.7048, 'longitude': 141.1468,
+        },
+        # ── 花巻市 ────────────────────────────────────────────
+        {
+            'name': 'BLEND STORE',
+            'address': '岩手県花巻市上町13-34 1階',
+            'nearest_station': '花巻駅',
+            'genres': 'ヴィンテージ,US古着,ストリート,レディース',
+            'hours': '平日 13:00〜19:00 / 土日祝 12:00〜19:00',
+            'holiday': '月曜日',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/blend___store/',
+            'description': 'ダンススタジオと古着屋を兼ねた複合スペース。個性的な品揃えで地元カルチャーの発信拠点となっている。',
+            'latitude': 39.3880, 'longitude': 141.1160,
+        },
+        # ── 奥州市 ────────────────────────────────────────────
+        {
+            'name': 'VILLAGE IMPORT',
+            'address': '岩手県奥州市水沢後田17-5',
+            'nearest_station': '水沢駅',
+            'genres': 'US古着,アメカジ,ヴィンテージ',
+            'hours': '平日 14:00〜19:00 / 土日祝 11:00〜19:00',
+            'holiday': '水曜日',
+            'homepage_url': 'https://village-import.com/',
+            'sns_url': 'https://www.instagram.com/village.import/',
+            'description': 'アメリカ古着・雑貨の専門店。本場アメリカから直輸入したUS古着やアメリカン雑貨を豊富に取り揃える。',
+            'latitude': 39.1430, 'longitude': 141.1370,
+        },
+        {
+            'name': '古着天国 OLD ROCKET',
+            'address': '岩手県奥州市水沢真城柿ノ木下59-3',
+            'nearest_station': '水沢駅',
+            'genres': 'ヴィンテージ,US古着,アメカジ',
+            'hours': '平日 12:00〜18:00 / 土日祝 11:00〜18:00',
+            'holiday': '水曜日',
+            'homepage_url': '',
+            'sns_url': 'https://www.instagram.com/furugi_paradise.oldrocket/',
+            'description': '奥州市水沢エリアの古着屋。海外輸入ヴィンテージ古着・雑貨・小物を中心に取り扱い、取り置きサービスにも対応（DM・電話可）。',
+            'latitude': 39.1350, 'longitude': 141.1340,
+        },
+    ]
+
+    added = 0
+    for d in iwate_shops:
+        if Shop.query.filter_by(name=d['name']).first():
+            continue
+        db.session.add(Shop(
+            name=d['name'],
+            address=d.get('address', ''),
+            nearest_station=d.get('nearest_station', ''),
+            genres=d.get('genres', ''),
+            hours=d.get('hours', ''),
+            holiday=d.get('holiday', 'なし'),
+            homepage_url=d.get('homepage_url', ''),
+            sns_url=d.get('sns_url', ''),
+            description=d.get('description', ''),
+            price_range=d.get('price_range', '不明'),
+            payment_methods=d.get('payment_methods', '不明'),
+            parking=d.get('parking', ''),
+            latitude=d['latitude'],
+            longitude=d['longitude'],
+            rating=0.0,
+            review_count=0,
+            place_id='',
+            plus_code='',
+        ))
+        added += 1
+    db.session.commit()
+    print(f"✅ 岩手県の古着屋 {added} 件を追加しました（スキップ: {len(iwate_shops) - added} 件）")
+
+
 def seed_data():
     db.create_all()
     migrate_db()
@@ -1006,6 +1207,7 @@ def seed_data():
 
     seed_aomori_shops()
     seed_akita_shops()
+    seed_iwate_shops()
 
 # gunicorn・直接実行どちらでも起動時にDB初期化
 with app.app_context():
