@@ -218,12 +218,16 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _saveAdjustedPosition() async {
+
+    debugPrint('===＜検証＞保存ボタンが反応しました＝＝＝');
+    debugPrint('調整中のショップ： $_adjustingShop');
+    debugPrint('動かした後の位置: $_adjustedPosition');
     if (_adjustingShop == null || _adjustedPosition == null) return;
     setState(() => _isSaving = true);
     try {
       await ApiService.updateShop(_adjustingShop!.id, {
         'latitude': _adjustedPosition!.latitude,
-        'longitude': _adjustedPosition!.longitude,
+        'longitude': _adjustedPosition!.longitude,//緯度経度
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context)
